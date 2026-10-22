@@ -31,7 +31,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { color: var(--ink); font-family: var(--sans); overflow-x: hidden; }
 body {
-  min-height: 100vh; padding: 26px 16px 90px;
+  min-height: 100vh; padding: 26px 16px 40px;
   background-color: var(--bg);
   background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size: 28px 28px;
@@ -230,7 +230,7 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
 .shot p { color: #fff; font-size: 17px; }
 
 @media (max-width: 600px) {
-  body { padding: 16px 12px 76px; }
+  body { padding: 16px 12px 30px; }
   .win > .body { padding: 18px 14px 18px; }
   .title { font-size: 42px; }
   .taskbar { gap: 8px; padding: 0 10px; font-size: 15px; }
@@ -346,7 +346,6 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
   </section>
 </div>
 
-<div class="taskbar"><span class="start">✦ START</span><span class="tab" id="tab1">五行喜忌卡.exe</span><span class="clock" id="clock"></span></div>
 
 <script src="html2canvas.min.js"></script>
 <script src="wuxing.js"></script>
@@ -359,8 +358,6 @@ const nameQ = (q.get('n') || '').trim().slice(0, 8);
 const WXC = w => 'var(--' + w + ')';
 const f2 = x => (Math.round(x * 100) / 100).toString();
 
-const tick = () => { const d = new Date(); $('clock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
-tick(); setInterval(tick, 20000);
 
 
 
@@ -542,7 +539,7 @@ function showResult() {
   const r = Wuxing.judge(b, { feel: q.get('t') || '', home: q.get('h') || '', city: q.get('c') || '' });
   if (r.error) { showHome(); $('err').textContent = '链接里的八字看不懂，请在上面重新选一次'; return; }
   $('result').classList.remove('hidden');
-  if (q.has('only')) { $('how').classList.add('hidden'); $('acts').classList.add('hidden'); document.querySelector('.taskbar').classList.add('hidden'); document.body.style.padding = '10px'; }
+  if (q.has('only')) { $('how').classList.add('hidden'); $('acts').classList.add('hidden'); document.body.style.padding = '10px'; }
   document.title = (nameQ ? nameQ + '的' : '') + '五行喜忌卡';
 
   // 卡
