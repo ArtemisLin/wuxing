@@ -173,6 +173,25 @@ body {
 .seal b { font-size: 21px; letter-spacing: 2px; }
 .seal i { font-style: normal; font-size: 13px; letter-spacing: 1px; margin-top: 3px; }
 
+
+/* ---------- 五行生克图（首页主图、卡上的喜忌都用它） ---------- */
+.wheel { position: relative; width: 600px; height: 590px; transform-origin: top left; }
+.wheel svg { position: absolute; inset: 0; overflow: visible; }
+.wheel .nd { position: absolute; width: 128px; height: 128px; margin: -64px 0 0 -64px; border-radius: 50%; background: var(--cream2); border: 3px solid var(--line); box-shadow: 0 0 0 5px var(--cream2), 0 0 0 7px var(--pink); display: flex; align-items: center; justify-content: center; }
+.wheel .nd img { width: 104px; height: 104px; object-fit: contain; }
+.wheel .nd .ch { font-family: var(--smiley); font-size: 58px; }
+.wheel .lb { position: absolute; transform: translate(-50%, -50%); font-family: var(--smiley); font-size: 38px; line-height: 1; text-shadow: 2px 2px 0 var(--cream2); }
+.wheel .bd { position: absolute; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; background: var(--cream2); border: 2.5px solid; display: flex; align-items: center; justify-content: center; font-family: var(--pixel); font-size: 19px; }
+.wheel .bd.k { border-color: var(--soft); color: var(--soft); }
+.wheel .nd.xi { border-color: var(--rose); box-shadow: 0 0 0 5px var(--cream2), 0 0 0 9px var(--rose), 0 0 26px 8px rgba(226, 0, 122, .25); }
+.wheel .nd.ji { filter: grayscale(1); opacity: .38; }
+.wheel .rk { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: var(--rose); color: #fff; font-family: var(--smiley); font-size: 26px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px var(--cream2); }
+.wheel .rk.j { background: var(--mute); font-family: var(--pixel); font-size: 19px; }
+.hero-wheel { margin: 6px auto 4px; }
+.xj-legend { font-size: 21px; color: var(--ink); text-align: center; margin-top: 4px; }
+.xj-legend b { font-family: var(--pixel); font-weight: 400; color: var(--rose); margin: 0 6px 0 14px; }
+.xj-legend b.j { color: var(--soft); }
+
 /* ---------- 怎么算的 ---------- */
 .pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; text-align: center; }
 .pillars .col { border: 2px solid var(--line); border-radius: 12px; background: var(--cream2); padding: 6px 0 8px; }
@@ -227,7 +246,7 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
   <div class="win">
     <div class="bar"><span>五行喜忌卡.exe</span><span class="btns"><i></i><i></i><i></i></span></div>
     <div class="body">
-      <div class="hero"><img class="pc" src="ui/computer.webp" alt=""></div>
+      <div class="hero"><div class="hero-wheel" id="heroWheel"></div></div>
       <h1 class="title">五行喜忌卡</h1>
       <p class="sub">传统五行的娱乐解读，<span class="warn">仅供参考</span></p>
       <div class="label">你的名字</div>
@@ -273,8 +292,8 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
           </div>
           <div class="blk">
             <h4>五行喜忌</h4>
-            <div class="xj-row"><span class="xj-tag xi">喜</span><div class="xj-row" id="cXi"></div></div>
-            <div class="xj-row"><span class="xj-tag ji">忌</span><div class="xj-row" id="cJi"></div></div>
+            <div style="width:492px;height:484px;margin:0 auto"><div id="cWheel" style="width:600px;height:590px;transform:scale(.82);transform-origin:top left"></div></div>
+            <div class="xj-legend" id="cLegend"></div>
             <div class="c-note" id="cNote"></div>
           </div>
           <div class="blk c-two">
@@ -335,7 +354,68 @@ const f2 = x => (Math.round(x * 100) / 100).toString();
 const tick = () => { const d = new Date(); $('clock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
 tick(); setInterval(tick, 20000);
 
-if (!b) showHome(); else showResult();
+
+
+/* ---------- 五行生克图 ---------- */
+// 按 600×590 设计：水在上，顺时针木、火、土、金（跟课件的生克图一样）；外圈箭头是生，中间虚线是克
+const WHEEL_ORDER = ['水', '木', '火', '土', '金'];
+const WHEEL_ICON = { 木: 'ui/wx-mu.webp', 火: 'ui/wx-huo.webp', 土: 'ui/wx-tu.webp', 金: 'ui/wx-jin.webp', 水: 'ui/wx-shui.webp' };
+const WX_COLOR = { 木: '#1e8e47', 火: '#c93a28', 土: '#8a5416', 金: '#ae8400', 水: '#1f6dbf' };
+let wheelIconsOK = false;
+function wheelHTML(opt) {
+  opt = opt || {};
+  const C = [300, 300], R = 200, r = 64;
+  const ang = i => (-90 + i * 72) * Math.PI / 180;
+  const P = i => [C[0] + R * Math.cos(ang(i)), C[1] + R * Math.sin(ang(i))];
+  const f = n => n.toFixed(1);
+  const head = (x, y, dx, dy, col) => {   // 箭头：尖在 (x,y)，方向 (dx,dy)
+    const L = Math.hypot(dx, dy); dx /= L; dy /= L;
+    const s = 16, w = 8;
+    return '<polygon points="' + f(x) + ',' + f(y) + ' ' + f(x - dx * s - dy * w) + ',' + f(y - dy * s + dx * w) + ' ' + f(x - dx * s + dy * w) + ',' + f(y - dy * s - dx * w) + '" fill="' + col + '"/>';
+  };
+  let svg = '', html = '';
+  // 生：外圈弧线
+  for (let i = 0; i < 5; i++) {
+    const d = (r + 16) / R, a1 = ang(i) + d, a2 = ang(i + 1) - d, col = WX_COLOR[WHEEL_ORDER[i]];
+    const x1 = C[0] + R * Math.cos(a1), y1 = C[1] + R * Math.sin(a1), x2 = C[0] + R * Math.cos(a2), y2 = C[1] + R * Math.sin(a2);
+    svg += '<path d="M' + f(x1) + ' ' + f(y1) + ' A' + R + ' ' + R + ' 0 0 1 ' + f(x2) + ' ' + f(y2) + '" fill="none" stroke="' + col + '" stroke-width="5" stroke-linecap="round" opacity=".8"/>';
+    svg += head(x2, y2, -Math.sin(a2), Math.cos(a2), col);
+    const am = (ang(i) + ang(i + 1)) / 2;
+    html += '<div class="bd" style="left:' + f(C[0] + R * Math.cos(am)) + 'px;top:' + f(C[1] + R * Math.sin(am)) + 'px;border-color:' + col + ';color:' + col + '">生</div>';
+  }
+  // 克：中间虚线
+  for (let i = 0; i < 5; i++) {
+    const [ax, ay] = P(i), [bx, by] = P(i + 2);
+    const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, g = r + 10;
+    const x1 = ax + ux * g, y1 = ay + uy * g, x2 = bx - ux * g, y2 = by - uy * g;
+    svg += '<line x1="' + f(x1) + '" y1="' + f(y1) + '" x2="' + f(x2) + '" y2="' + f(y2) + '" stroke="#5b5670" stroke-width="2.6" stroke-dasharray="9 7" opacity=".6"/>';
+    svg += head(x2, y2, ux, uy, 'rgba(91,86,112,.7)');
+    html += '<div class="bd k" style="left:' + f(ax + dx * 0.5) + 'px;top:' + f(ay + dy * 0.5) + 'px">克</div>';
+  }
+  // 五个圆圈、旁边的字、喜忌标记
+  WHEEL_ORDER.forEach((w, i) => {
+    const [x, y] = P(i), xiAt = (opt.xi || []).indexOf(w), isJi = (opt.ji || []).includes(w);
+    html += '<div class="nd' + (xiAt >= 0 ? ' xi' : '') + (isJi ? ' ji' : '') + '" style="left:' + f(x) + 'px;top:' + f(y) + 'px">' +
+      (wheelIconsOK ? '<img src="' + WHEEL_ICON[w] + '" alt="' + w + '">' : '<span class="ch" style="color:' + WX_COLOR[w] + '">' + w + '</span>') + '</div>';
+    const lx = x + (r + 34) * Math.cos(ang(i)), ly = y + (r + 34) * Math.sin(ang(i));
+    if (wheelIconsOK) html += '<div class="lb" style="left:' + f(lx) + 'px;top:' + f(ly) + 'px;color:' + WX_COLOR[w] + (isJi ? ';opacity:.45' : '') + '">' + w + '</div>';
+    if (xiAt >= 0) html += '<div class="rk" style="left:' + f(x + r * 0.78) + 'px;top:' + f(y - r * 0.78) + 'px">' + (xiAt + 1) + '</div>';
+    if (isJi) html += '<div class="rk j" style="left:' + f(x + r * 0.78) + 'px;top:' + f(y - r * 0.78) + 'px">忌</div>';
+  });
+  return '<div class="wheel"><svg viewBox="0 0 600 590" width="600" height="590">' + svg + '</svg>' + html + '</div>';
+}
+// 图案都在才用图案，否则圆圈里先写字
+function loadWheelIcons(done) {
+  let n = 0, ok = 0;
+  Object.values(WHEEL_ICON).forEach(src => { const im = new Image(); im.onload = () => { ok++; if (++n === 5) { wheelIconsOK = ok === 5; done(); } }; im.onerror = () => { if (++n === 5) { wheelIconsOK = ok === 5; done(); } }; im.src = src; });
+}
+// 首页主图：按栏宽缩放
+function fitHeroWheel() {
+  const box = $('heroWheel'); if (!box || !box.firstChild) return;
+  const k = Math.min(1, (box.parentElement.clientWidth - 10) / 600);
+  box.firstChild.style.transform = 'scale(' + k + ')';
+  box.style.width = 600 * k + 'px'; box.style.height = 590 * k + 'px';
+}
 
 /* ---------- 首页 ---------- */
 // 字按五行上色：天干看本身，地支看本气
@@ -348,6 +428,8 @@ function paint(c) { return '<span style="color:' + colorOf(c) + '">' + c + '</sp
 
 function showHome() {
   $('home').classList.remove('hidden');
+  const drawHero = () => { $('heroWheel').innerHTML = wheelHTML(); fitHeroWheel(); };
+  drawHero(); loadWheelIcons(drawHero); window.addEventListener('resize', fitHeroWheel);
   const cols = ['年柱', '月柱', '日柱', '时柱'];
   const g = ['', '', '', ''], z = ['', '', '', ''];
   let act = { t: 'g', i: 0 };
@@ -458,8 +540,9 @@ function showResult() {
   const solidRoot = r.roots.some(x => !x.broken);
   $('cChips').innerHTML = [['得令', r.deling], ['得地', solidRoot], ['得生', r.sheng.length > 0], ['得助', r.zhu.length > 0 || r.roots.some(x => !x.broken && x.k === 0)]]
     .map(([n, on]) => '<span class="chip' + (on ? ' on' : '') + '">' + n + (on ? ' ✓' : ' ✗') + '</span>').join('');
-  $('cXi').innerHTML = r.xiWx.map((w, i) => (i ? '<span class="wx-arrow">›</span>' : '') + wxBall(w)).join('');
-  $('cJi').innerHTML = r.jiWx.map(w => wxBall(w, true)).join('');
+  const drawWheel = () => { $('cWheel').innerHTML = wheelHTML({ xi: r.xiWx, ji: r.jiWx }); fit(); };
+  drawWheel(); loadWheelIcons(drawWheel);
+  $('cLegend').innerHTML = '<b>喜</b>' + r.xiWx.map(w => '<span style="color:' + WX_COLOR[w] + '">' + w + '</span>').join(' › ') + '<b class="j">忌</b>' + r.jiWx.map(w => '<span style="color:' + WX_COLOR[w] + '">' + w + '</span>').join('、');
   const notes = [];
   if (r.cong) notes.push('<b>这个盘可能是' + r.cong + '格</b>，喜忌按' + r.cong + '取，和一般的盘相反；拿不准可以请懂行的老师再看看。');
   else { if (r.tiaohou) notes.push(r.tiaohou); if (r.feelNote) notes.push(r.feelNote); }
@@ -535,6 +618,8 @@ function fit() {
   $('scene').style.width = 720 * k + 'px';
   $('scene').style.height = $('card').offsetHeight * k + 'px';
 }
+// 启动放在最后：上面所有的常量、函数都定义好了再跑
+if (!b) showHome(); else showResult();
 </script>
 </body>
 </html>
