@@ -1,6 +1,9 @@
 /* 五行喜忌卡的规则。
  * 口径和 `AI提示词-五行喜忌与天选城市.md` 一致：身强身弱按固定分数表算，喜忌、调候、从格按规则排，
- * 所以同一个盘每次打开都是同一个结果。改规则时两边一起改。 */
+ * 所以同一个盘每次打开都是同一个结果。改规则时两边一起改。
+ * 10-21 第二版（谷雨嫌自己的盘只算出「偏强」）：地支按本气整份算（讲义：地支的五行和十神都按本气算）；
+ * 帮身占比再按两万个随机盘的分位数换算成「强弱值」，50＝中正，分八档：
+ * 非常弱 / 很弱 / 弱 / 偏弱 / 偏强 / 强 / 很强 / 非常强，人数大约 5/10/15/20/20/15/10/5%。 */
 (function (global) {
   const GAN = '甲乙丙丁戊己庚辛壬癸';
   const ZHI = '子丑寅卯辰巳午未申酉戌亥';
@@ -8,7 +11,6 @@
   const GAN_WX = { 甲: '木', 乙: '木', 丙: '火', 丁: '火', 戊: '土', 己: '土', 庚: '金', 辛: '金', 壬: '水', 癸: '水' };
   // 藏干：本气、中气、余气
   const CG = { 子: '癸', 丑: '己癸辛', 寅: '甲丙戊', 卯: '乙', 辰: '戊乙癸', 巳: '丙庚戊', 午: '丁己', 未: '己丁乙', 申: '庚壬戊', 酉: '辛', 戌: '戊辛丁', 亥: '壬甲' };
-  const RATIO = { 1: [1], 2: [0.7, 0.3], 3: [0.6, 0.3, 0.1] };
   const SHENG = { 木: '火', 火: '土', 土: '金', 金: '水', 水: '木' }; // A 生 SHENG[A]
   const KE = { 木: '土', 土: '水', 水: '火', 火: '金', 金: '木' };    // A 克 KE[A]
   const CHONG = ['子午', '丑未', '寅申', '卯酉', '辰戌', '巳亥'];
@@ -16,6 +18,17 @@
   const LING = { 寅: '木', 卯: '木', 巳: '火', 午: '火', 申: '金', 酉: '金', 亥: '水', 子: '水', 辰: '土', 戌: '土', 丑: '土', 未: '土' };
   const STATE = { 同我: '旺', 生我: '相', 我生: '休', 我克: '囚', 克我: '死' };
   const HELP = ['生我', '同我'], HURT = ['克我', '我生', '我克'];
+
+  // 强弱值：原始帮身占比（%）→ 强弱值，按分位数分段换算（[原始, 强弱值]）
+  const ANCH = [[0, 0], [8, 20], [16.6, 30], [25.4, 40], [37.6, 50], [52, 60], [64.8, 70], [77.3, 80], [100, 100]];
+  function toIndex(raw) {
+    for (let i = 1; i < ANCH.length; i++) {
+      const [a, ia] = ANCH[i - 1], [b, ib] = ANCH[i];
+      if (raw <= b) return ia + (raw - a) / (b - a) * (ib - ia);
+    }
+    return 100;
+  }
+  const LEVELS = [[80, '非常强'], [70, '很强'], [60, '强'], [50, '偏强'], [40, '偏弱'], [30, '弱'], [20, '很弱'], [0, '非常弱']];
 
   // 位置分：月支 4、日支 2、月干和时干 1.5、年干年支时支 1
   const W_GAN = [1, 1.5, 0, 1.5];
@@ -111,7 +124,7 @@
     const order = has4 ? [['g', 0], ['z', 0], ['g', 1], ['z', 1], ['z', 2], ['g', 3], ['z', 3]] : [['g', 0], ['z', 0], ['g', 1], ['z', 1], ['z', 2]];
     for (const [t, i] of order) {
       const row = { pos: POS[i] + (t === 'g' ? '干' : '支'), ch: t === 'g' ? g[i] : z[i], parts: [], help: 0, hurt: 0, disc: t === 'z' ? disc[i] : 1 };
-      const items = t === 'g' ? [[g[i], W_GAN[i]]] : [...CG[z[i]]].map((c, k) => [c, W_ZHI[i] * RATIO[CG[z[i]].length][k] * disc[i]]);
+      const items = t === 'g' ? [[g[i], W_GAN[i]]] : [[CG[z[i]][0], W_ZHI[i] * disc[i]]];   // 地支按本气整份算
       for (const [c, v] of items) {
         const cat = rel(me, GAN_WX[c]);
         sum[cat] += v;
@@ -125,6 +138,8 @@
     for (const k in sum) sum[k] = r6(sum[k]);
     const help = r6(sum.生我 + sum.同我), total = r6(help + sum.克我 + sum.我生 + sum.我克);
     const pct = r6(help / total);
+    const raw = Math.round(help / total * 1e6) / 1e4;          // 原始帮身占比，百分数，保留 4 位
+    const index = Math.round(toIndex(raw) * 1e4) / 1e4;        // 强弱值 0～100，50＝中正
 
     // 得令、得地、得生、得助
     const lingCat = rel(me, LING[z[1]]);
@@ -142,12 +157,9 @@
     g.forEach((c, i) => { if (i === 2) return; const r = rel(me, GAN_WX[c]); if (r === '生我') sheng.push(c); if (r === '同我') zhu.push(c); });
     z.forEach(b => { const r = rel(me, GAN_WX[CG[b][0]]); if (r === '生我') sheng.push(b); });
 
-    let level;
-    const strong = pct > 0.5 || (pct === 0.5 && deling);
-    if (pct >= 0.6) level = '身强';
-    else if (strong) level = '偏强';
-    else if (pct >= 0.4) level = '偏弱';
-    else level = '身弱';
+    const strong = index > 50 || (index === 50 && deling);
+    let level = LEVELS.find(([th]) => index >= th)[1];
+    if (index === 50 && !deling) level = '偏弱';
 
     // 扶抑取喜忌
     let xi, ji;
@@ -175,11 +187,11 @@
     // 从格：满足才提
     let cong = '';
     const fuyi = { xiWx: xiWx.slice(), jiWx: jiWx.slice() };
-    if (pct >= 0.85) {
+    if (index >= 90) {
       cong = '从强';
       xiWx = HELP.slice().sort((a, b) => sum[b] - sum[a]).map(c => catWx(me, c));
       jiWx = ['克我', '我克'].map(c => catWx(me, c));
-    } else if (pct < 0.25) {
+    } else if (index < 30) {
       const solid = roots.some(r => !r.broken && r.k <= 1);
       const helper = g.some((c, i) => i !== 2 && HELP.includes(rel(me, GAN_WX[c])));
       if (!solid && !helper) {
@@ -210,7 +222,7 @@
     const avoidDir = DIR[jiWx[0]].map(d => DIR_NAME[d]);
 
     return {
-      pillars: P, has4, dm, me, rows, sum, total, pct, level, strong, deling, ling: LING[z[1]], state: STATE[lingCat],
+      pillars: P, has4, dm, me, rows, sum, total, pct, raw, index, level, strong, deling, ling: LING[z[1]], state: STATE[lingCat],
       roots, sheng, zhu, clash, tiaohou, cong, fuyi, xiWx, jiWx,
       label, phrase, colors, nums, dirText: dirs.map(d => DIR_NAME[d]).join('和'), cities, countries, tastes, veg, avoidDir,
     };

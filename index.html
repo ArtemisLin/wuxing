@@ -104,10 +104,12 @@ body {
 .c-strength { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 18px; align-items: center; }
 .c-level { font-family: var(--smiley); font-size: 76px; line-height: 1; text-align: center; color: var(--ink); text-shadow: 3px 3px 0 var(--pink); }
 .c-level small { display: block; font-family: var(--pixel); font-size: 17px; color: var(--soft); text-shadow: none; margin-top: 8px; letter-spacing: 1px; }
-.meter { height: 30px; border: 2.5px solid var(--line); border-radius: 15px; background: var(--cream2); overflow: hidden; display: flex; }
+.meter { position: relative; height: 30px; border: 2.5px solid var(--line); border-radius: 15px; background: var(--cream2); overflow: hidden; display: flex; }
 .meter i { display: block; height: 100%; background: var(--rose); border-radius: 12px 0 0 12px; }
+.meter u { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 0; border-left: 3px dashed var(--ink); opacity: .55; }
 .meter-t { display: flex; justify-content: space-between; font-family: var(--pixel); font-size: 17px; color: var(--soft); margin-top: 6px; }
 .meter-t b { color: var(--rose); font-weight: 400; }
+.meter-t .mid { color: var(--ink); }
 .chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .chip { font-family: var(--pixel); font-size: 17px; padding: 4px 12px; border-radius: 14px; border: 2px solid var(--line); background: var(--cream2); color: var(--mute); }
 .chip.on { background: var(--rose); border-color: var(--rose); color: #fff; }
@@ -233,8 +235,8 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
             <div class="c-strength">
               <div class="c-level" id="cLevel"></div>
               <div>
-                <div class="meter"><i id="cMeter"></i></div>
-                <div class="meter-t"><span>帮身 <b id="cPct"></b></span><span>耗身 <span id="cPct2"></span></span></div>
+                <div class="meter"><i id="cMeter"></i><u></u></div>
+                <div class="meter-t"><span>弱</span><span class="mid">强弱值 <b id="cIdx"></b>（50 中正）</span><span>强</span></div>
                 <div class="chips" id="cChips"></div>
               </div>
             </div>
@@ -279,7 +281,7 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
       <div class="label">为什么是这个结果</div>
       <ul class="why" id="why"></ul>
       <div class="label">怎么算</div>
-      <div class="rule">每个字先归成五类：生我、同我（帮身），克我、我生、我克（耗身）。位置分：月支 4、日支 2、月干和时干 1.5、年干、年支、时支各 1；地支按藏干拆开（一个字全给本气，两个字七三分，三个字六三一分）；相邻地支冲或合，各打七折。帮身占 60% 以上身强，50%～60% 偏强，40%～50% 偏弱，不到 40% 身弱。身弱补生我、同我；身强取克我、我生、我克。冬天生的火提前，夏天生的水提前。</div>
+      <div class="rule">每个字先归成五类：生我、同我（帮身），克我、我生、我克（耗身）。位置分：月支 4、日支 2、月干和时干 1.5、年干、年支、时支各 1；地支按本气算；相邻地支冲或合，各打七折。<br>帮身占比再换算成强弱值：50 是中正（一半的人在 50 以上），往两边依次是偏强、强、很强、非常强，偏弱、弱、很弱、非常弱。<br>偏弱及以下补生我、同我；偏强及以上取克我、我生、我克。冬天生的火提前，夏天生的水提前。</div>
     </div>
   </section>
 </div>
@@ -340,10 +342,10 @@ function showResult() {
   $('cLabel').textContent = r.label;
   $('cPhrase').textContent = r.phrase;
   $('cLevel').innerHTML = esc(r.level) + '<small>' + (r.deling ? '得令' : '失令') + ' · ' + r.ling + '当令</small>';
-  const p = Math.round(r.pct * 100);
-  $('cMeter').style.width = p + '%';
-  $('cPct').textContent = p + '%';
-  $('cPct2').textContent = (100 - p) + '%';
+  $('cLevel').style.fontSize = r.level.length > 2 ? '56px' : '';
+  const ix = Math.round(r.index);
+  $('cMeter').style.width = Math.max(4, ix) + '%';
+  $('cIdx').textContent = ix;
   const solidRoot = r.roots.some(x => !x.broken);
   $('cChips').innerHTML = [['得令', r.deling], ['得地', solidRoot], ['得生', r.sheng.length > 0], ['得助', r.zhu.length > 0 || r.roots.some(x => !x.broken && x.k === 0)]]
     .map(([n, on]) => '<span class="chip' + (on ? ' on' : '') + '">' + n + (on ? ' ✓' : ' ✗') + '</span>').join('');
@@ -366,7 +368,7 @@ function showResult() {
     (r.has4 ? '' : '<div class="col"><div class="pos">时柱</div><div class="gz">？<br>？</div></div>');
   $('score').innerHTML = '<tr><th>位置</th><th>怎么算</th><th>帮身</th><th>耗身</th></tr>' +
     r.rows.map(row => '<tr><td class="p">' + row.pos + ' <b>' + row.ch + '</b></td><td>' +
-      row.parts.map(x => '<span class="' + (x.cat === '生我' || x.cat === '同我' ? 'h' : '') + '">' + x.ch + ' ' + x.cat + ' ' + f2(x.v) + '</span>').join('、') +
+      row.parts.map(x => '<span class="' + (x.cat === '生我' || x.cat === '同我' ? 'h' : '') + '">' + x.ch + (row.pos.endsWith('支') ? '（本气）' : '') + ' ' + x.cat + ' ' + f2(x.v) + '</span>').join('、') +
       (row.disc < 1 ? '（冲合打折）' : '') + '</td><td class="n">' + f2(row.help) + '</td><td class="n">' + f2(row.hurt) + '</td></tr>').join('') +
     '<tr class="tot"><td colspan="2">合计</td><td class="n">' + f2(r.sum.生我 + r.sum.同我) + '</td><td class="n">' + f2(r.sum.克我 + r.sum.我生 + r.sum.我克) + '</td></tr>';
   $('sum5').innerHTML = ['生我', '同我', '克我', '我生', '我克'].map(c => '<div class="' + (c === '生我' || c === '同我' ? 'h' : '') + '">' + c + '（' + Wuxing.catWx(r.me, c) + '）<b>' + f2(r.sum[c]) + '</b></div>').join('');
@@ -376,7 +378,7 @@ function showResult() {
     '<b>得地</b>：' + rootTxt + '。',
     '<b>得生、得助</b>：生我的字 ' + (r.sheng.join('、') || '没有') + '；天干上同我的字 ' + (r.zhu.join('、') || '没有') + '。',
     (r.clash.length ? '<b>冲合</b>：' + r.clash.join('，') + '，这两支的分数打七折。' : '<b>冲合</b>：相邻地支没有六冲、六合。'),
-    '<b>结论</b>：帮身占 ' + Math.round(r.pct * 1000) / 10 + '%，' + r.level + '。' + (r.strong ? '帮身的力量够了，喜克我、我生、我克来平衡。' : '帮身的力量不够，喜生我、同我来补。'),
+    '<b>结论</b>：帮身占 ' + Math.round(r.raw * 10) / 10 + '%，换算成强弱值 ' + Math.round(r.index) + '（50 是中正），' + r.level + '。' + (r.strong ? '帮身的力量够了，喜克我、我生、我克来平衡。' : '帮身的力量不够，喜生我、同我来补。'),
   ];
   if (r.tiaohou) why.push('<b>寒暖</b>：' + r.tiaohou);
   if (r.cong) why.push('<b>从格</b>：' + (r.cong === '从弱' ? '帮身不到 25%，日主没有站得住的根，天干也没有帮手' : '帮身 85% 以上') + '，可能是' + r.cong + '格。按一般的盘看，喜 ' + r.fuyi.xiWx.join('、') + '，忌 ' + r.fuyi.jiWx.join('、') + '；卡上写的是' + r.cong + '格的喜忌。');
