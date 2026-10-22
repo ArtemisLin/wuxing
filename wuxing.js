@@ -145,6 +145,40 @@
   const LIP = { 火: ['番茄红', '正红', '砖红'], 土: ['奶茶色', '焦糖色', '豆沙色'], 金: ['裸粉色', '香槟色', '珠光杏色'], 水: ['梅子色', '浆果色', '黑樱桃色'] };
   const HAIR = { 木: ['墨绿', '抹茶棕', '橄榄棕'], 火: ['酒红', '樱桃红', '红棕'], 土: ['栗棕', '焦糖棕', '奶茶棕'], 金: ['香槟金', '浅金', '银灰'], 水: ['蓝黑', '雾霾蓝', '黑茶色'] };
 
+  /* ---------- 10-21 第四版：城市分档、老家 ---------- */
+  // 城市：[纬度, 经度, 档次, 所在片区]。档次 1＝宜居（暖和、经济好），2＝还行，3＝苦寒偏远（只推荐给老家在同一片的人）
+  const CITY_INFO = {
+    北京: [39.9, 116.4, 2, '华北'], 天津: [39.1, 117.2, 2, '华北'],
+    沈阳: [41.8, 123.4, 3, '东北'], 大连: [38.9, 121.6, 3, '东北'], 哈尔滨: [45.8, 126.6, 3, '东北'],
+    上海: [31.2, 121.5, 1, '华东'], 杭州: [30.3, 120.2, 1, '华东'], 苏州: [31.3, 120.6, 1, '华东'], 南京: [32.1, 118.8, 1, '华东'], 宁波: [29.9, 121.5, 1, '华东'],
+    福州: [26.1, 119.3, 1, '华东'], 厦门: [24.5, 118.1, 1, '华东'], 台湾: [25.0, 121.5, 1, '华东'],
+    广州: [23.1, 113.3, 1, '华南'], 深圳: [22.5, 114.1, 1, '华南'], 香港: [22.3, 114.2, 1, '华南'], 澳门: [22.2, 113.5, 1, '华南'], 潮汕: [23.4, 116.7, 1, '华南'], 海南: [20.0, 110.3, 1, '华南'],
+    成都: [30.7, 104.1, 1, '西南'], 重庆: [29.6, 106.5, 1, '西南'], 昆明: [25.0, 102.7, 1, '西南'], 玉溪: [24.4, 102.5, 1, '西南'], 普洱: [22.8, 101.0, 1, '西南'],
+    西双版纳: [22.0, 100.8, 1, '西南'], 芒市: [24.4, 98.6, 1, '西南'], 大理: [25.6, 100.2, 1, '西南'], 丽江: [26.9, 100.2, 1, '西南'],
+    西安: [34.3, 108.9, 2, '西北'], 兰州: [36.1, 103.8, 3, '西北'], 乌鲁木齐: [43.8, 87.6, 3, '西北'], 银川: [38.5, 106.3, 3, '西北'],
+    郑州: [34.7, 113.6, 2, '华中'], 洛阳: [34.6, 112.4, 2, '华中'], 武汉: [30.6, 114.3, 2, '华中'], 合肥: [31.8, 117.3, 2, '华中'],
+  };
+  // 老家省份：[省会纬度, 经度, 片区, 按全国地图的方位]
+  const PROV = {
+    北京: [39.9, 116.4, '华北', '北'], 天津: [39.1, 117.2, '华北', '北'], 河北: [38.0, 114.5, '华北', '北'], 山西: [37.9, 112.5, '华北', '北'], 内蒙古: [40.8, 111.7, '华北', '北'],
+    辽宁: [41.8, 123.4, '东北', '东北'], 吉林: [43.9, 125.3, '东北', '东北'], 黑龙江: [45.8, 126.6, '东北', '东北'],
+    上海: [31.2, 121.5, '华东', '东'], 江苏: [32.1, 118.8, '华东', '东'], 浙江: [30.3, 120.2, '华东', '东'], 山东: [36.7, 117.0, '华东', '东'],
+    福建: [26.1, 119.3, '华东', '东南'], 台湾: [25.0, 121.5, '华东', '东南'],
+    广东: [23.1, 113.3, '华南', '南'], 广西: [22.8, 108.3, '华南', '南'], 海南: [20.0, 110.3, '华南', '南'], 香港: [22.3, 114.2, '华南', '南'], 澳门: [22.2, 113.5, '华南', '南'],
+    四川: [30.7, 104.1, '西南', '西南'], 重庆: [29.6, 106.5, '西南', '西南'], 云南: [25.0, 102.7, '西南', '西南'], 贵州: [26.6, 106.7, '西南', '西南'], 西藏: [29.7, 91.1, '西藏', '西南'],
+    陕西: [34.3, 108.9, '西北', '西'], 甘肃: [36.1, 103.8, '西北', '西'], 青海: [36.6, 101.8, '西北', '西'], 宁夏: [38.5, 106.3, '西北', '西北'], 新疆: [43.8, 87.6, '西北', '西北'],
+    河南: [34.7, 113.6, '华中', '中'], 湖北: [30.6, 114.3, '华中', '中'], 湖南: [28.2, 112.9, '华中', '中'], 安徽: [31.8, 117.3, '华中', '中'], 江西: [28.7, 115.9, '华中', '中'],
+  };
+  const CENTER = [32.5, 113.5];   // 全国中部（郑州、武汉之间）
+  const DIR_DEG = { 北: 0, 东北: 45, 东: 90, 东南: 135, 南: 180, 西南: 225, 西: 270, 西北: 315 };
+  // 方位里的五行：四隅的两个地支，一个土、一个本方
+  const DIR_WX = { 北: ['水'], 东北: ['木', '土'], 东: ['木'], 东南: ['火', '土'], 南: ['火'], 西南: ['金', '土'], 西: ['金'], 西北: ['水', '土'], 中: ['土'] };
+  const PROV_LIST = Object.keys(PROV);
+  function bearing(from, to) {
+    const dx = (to[1] - from[1]) * Math.cos((from[0] + to[0]) / 2 * Math.PI / 180), dy = to[0] - from[0];
+    return { deg: (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360, dist: Math.hypot(dx, dy) * 111 };
+  }
+
   function judge(s, opt) {
     opt = opt || {};
     const P = parse(s);
@@ -265,8 +299,29 @@
     const colors = [...pick(COLORS[x0], 2, seed), ...(x1 ? pick(COLORS[x1], 1, seed + 1) : [])];
     const nums = [...new Set([...HETU[x0], ...(x1 ? HETU[x1] : [])])];
     const dirs = DIR[x0];
-    let cities = pick(CITY[dirs[0]], dirs[1] ? 3 : 4, seed);
-    if (dirs[1]) cities = cities.concat(pick(CITY[dirs[1]], 1, seed));
+    const home = PROV[opt.home] ? opt.home : '';
+    // 挑城市：按全国地图的方位，苦寒偏远的只给老家在同一片的人；挑不够，就从老家（没填就从全国中部）往这个方向找宜居的
+    const okCity = c => CITY_INFO[c][2] < 3 || (home && PROV[home][2] === CITY_INFO[c][3]);
+    const cityNotes = [];
+    function pickCities(ds, n, used) {
+      let out = [];
+      const pools = ds.map(d => (CITY[d] || []).filter(c => okCity(c) && !used.includes(c)).sort((a, b) => CITY_INFO[a][2] - CITY_INFO[b][2]));
+      // 主方向拿大头，次方向拿一个；主方向空了，名额都给次方向
+      const quota = ds.length > 1 ? (pools[0].length ? [n - 1, 1] : [0, n]) : [n];
+      pools.forEach((pl, i) => { out = out.concat(pick(pl, quota[i], seed).filter(c => !out.includes(c))); });
+      if (out.length >= 2 || ds[0] === '中') return out.slice(0, n);
+      const origin = home ? PROV[home].slice(0, 2) : CENTER;
+      const far = ds.filter(d => (CITY[d] || []).every(c => !okCity(c)));
+      const cand = Object.keys(CITY_INFO).filter(c => okCity(c) && !used.includes(c) && !out.includes(c)).map(c => {
+        const b = bearing(origin, CITY_INFO[c]);
+        const off = Math.min(...ds.map(d => { const x = Math.abs(b.deg - DIR_DEG[d]); return Math.min(x, 360 - x); }));
+        return { c, off, dist: b.dist, tier: CITY_INFO[c][2] };
+      }).filter(x => x.off <= 67.5 && x.dist > 150).sort((a, b) => (a.off + (a.tier - 1) * 20) - (b.off + (b.tier - 1) * 20) || a.dist - b.dist);
+      const add = cand.slice(0, n - out.length).map(x => x.c);
+      if (add.length) cityNotes.push((far.length ? far.map(d => DIR_NAME[d]).join('、') + '那边太冷太远' : ds.map(d => DIR_NAME[d]).join('、') + '那边可选的不多') + '，从' + (home ? '你老家' + home : '全国中部') + '往这个方向，挑了好去的' + add.join('、') + '。');
+      return out.concat(add).slice(0, n);
+    }
+    let cities = pickCities(dirs, 4, []);
     let countries = [];
     for (const d of [...dirs, ...(x1 ? DIR[x1] : [])]) { if (COUNTRY[d]) { countries = pick(COUNTRY[d], 2, seed); break; } }
     const tastes = [TASTE[x0], ...(x1 ? [TASTE[x1]] : [])];
@@ -281,12 +336,20 @@
     const hair = pick(HAIR[x0], 1, seed)[0];
     const avatar = colors[0];
     const yangDirs = [...new Set([ZHI_DIR[CHANGSHENG[dm]], ZHI_DIR[LU[dm]]])];
-    let yangCities = [];
-    for (const d of yangDirs) yangCities = yangCities.concat(pick(CITY[d].filter(c => !cities.includes(c)), 2, seed));
+    const yangCities = pickCities(yangDirs, 3, cities);
+    // 老家对号入座
+    let homeLine = '';
+    if (home) {
+      const hd = PROV[home][3], hw = DIR_WX[hd], good = hw.filter(w => xiWx.includes(w)), bad = hw.filter(w => jiWx.includes(w));
+      const where = '老家' + home + '在' + DIR_NAME[hd] + '，属' + hw.join('、');
+      homeLine = good.length && !bad.length ? where + '，正是你的喜用，老家养你。'
+        : bad.length && !good.length ? where + '，是你用多了不舒服的那一行，难怪想往外走。'
+        : where + '，一半帮你、一半磨你，回去小住最舒服。';
+    }
     const yangWhy = dm + '长生在' + CHANGSHENG[dm] + '（' + ZHI_DIR[CHANGSHENG[dm]] + '），禄在' + LU[dm] + '（' + ZHI_DIR[LU[dm]] + '）';
 
     return {
-      nick: nick[0], nickLine: nick[1], lip, hair, avatar, feelNote, tiaoStems: tStems,
+      nick: nick[0], nickLine: nick[1], lip, hair, avatar, feelNote, tiaoStems: tStems, home, homeLine, cityNotes,
       yangDir: yangDirs.map(d => DIR_NAME[d]).join('和'), yangCities, yangWhy,
       pillars: P, has4, dm, me, rows, sum, total, pct, raw, index, level, strong, deling, ling: LING[z[1]], state: STATE[lingCat],
       roots, sheng, zhu, clash, tiaohou, cong, fuyi, xiWx, jiWx,
@@ -294,5 +357,5 @@
     };
   }
 
-  global.Wuxing = { judge, parse, GAN, ZHI, GAN_WX, CG, rel, catWx };
+  global.Wuxing = { judge, parse, GAN, ZHI, GAN_WX, CG, rel, catWx, PROV_LIST };
 })(typeof window !== 'undefined' ? window : globalThis);
