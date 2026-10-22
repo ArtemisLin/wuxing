@@ -60,9 +60,19 @@ body {
 .name:focus { outline: 3px solid var(--rose-soft); }
 .picks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; text-align: center; margin-top: 10px; }
 .picks .pos { font-family: var(--pixel); font-size: 15px; color: var(--soft); margin-bottom: 5px; }
-.picks select { font-family: var(--smiley); font-size: 24px; width: 100%; min-width: 0; height: 50px; padding: 0 2px; border-radius: 10px; border: 2px solid var(--line); background: var(--cream2); color: var(--ink); text-align: center; appearance: none; -webkit-appearance: none; cursor: pointer; }
-.picks select:focus { outline: 3px solid var(--rose-soft); }
-.picks select + select { margin-top: 8px; }
+.slot { display: block; width: 100%; height: 56px; border-radius: 10px; border: 2px solid var(--line); background: var(--cream2); font-family: var(--smiley); font-size: 32px; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.slot.ph { font-family: var(--pixel); font-size: 16px; color: var(--mute); }
+.slot + .slot { margin-top: 8px; }
+.slot.on { border-color: var(--rose); box-shadow: 0 0 0 3px var(--rose-soft); background: #fff; }
+.kb { margin-top: 14px; border: 2px dashed var(--line); border-radius: 12px; padding: 10px 10px 12px; background: var(--cream2); }
+.kb .t { font-family: var(--pixel); font-size: 15px; color: var(--rose); margin-bottom: 9px; }
+.keys { display: grid; gap: 8px; }
+.keys.k5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.keys.k6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.key { height: 58px; border-radius: 10px; border: 2px solid currentColor; background: #fff; font-family: var(--smiley); font-size: 28px; line-height: 1; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; -webkit-tap-highlight-color: transparent; }
+.key small { font-family: var(--pixel); font-size: 11px; opacity: .85; }
+.key:active { transform: translateY(1px); }
+.key.unk { grid-column: 1 / -1; height: 44px; font-family: var(--pixel); font-size: 16px; color: var(--soft); }
 .acts { display: flex; gap: 12px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
 .btn { font-family: var(--pixel); font-size: 19px; padding: 11px 28px; border-radius: 26px; border: 2.5px solid var(--rose); cursor: pointer; background: var(--rose); color: #fff; letter-spacing: 1px; text-decoration: none; box-shadow: 0 4px 0 #b30062; }
 .btn.big { width: 100%; font-size: 21px; padding: 13px 0; }
@@ -207,8 +217,9 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
       <div class="label">你的名字</div>
       <input class="name" id="nm" maxlength="8" placeholder="可以不填，填了会印在卡上">
       <div class="label">你的八字</div>
-      <p class="how">照着你的八字排盘（用哪个排盘 App 都可以），一柱一柱选好天干、地支。不知道时辰的，时柱选「不知道」。</p>
+      <p class="how">照着你的八字排盘（用哪个排盘 App 都可以），从年柱天干开始点字，选完会自动跳到下一格。点格子可以改。不知道时辰的，时柱点「不知道时辰」。</p>
       <div class="picks" id="picks"></div>
+      <div class="kb hidden" id="kb"><div class="t" id="kbT"></div><div class="keys" id="keys"></div></div>
       <div class="acts"><button class="btn big" id="go">生成我的五行卡 ▶</button></div>
       <p class="err" id="err"></p>
     </div>
@@ -305,21 +316,66 @@ tick(); setInterval(tick, 20000);
 if (!b) showHome(); else showResult();
 
 /* ---------- 首页 ---------- */
+// 字按五行上色：天干看本身，地支看本气
+// 用函数声明（会提前生效），因为页面一打开就调用 showHome / showResult
+function isGan(c) { return Wuxing.GAN.includes(c); }
+function wxOf(c) { return isGan(c) ? Wuxing.GAN_WX[c] : Wuxing.GAN_WX[Wuxing.CG[c][0]]; }
+function yyOf(c) { return (isGan(c) ? Wuxing.GAN.indexOf(c) : Wuxing.ZHI.indexOf(c)) % 2 === 0 ? '阳' : '阴'; }
+function colorOf(c) { return { 木: '#1e8e47', 火: '#c93a28', 土: '#8a5416', 金: '#ae8400', 水: '#1f6dbf' }[wxOf(c)]; }
+function paint(c) { return '<span style="color:' + colorOf(c) + '">' + c + '</span>'; }
+
 function showHome() {
   $('home').classList.remove('hidden');
   const cols = ['年柱', '月柱', '日柱', '时柱'];
-  $('picks').innerHTML = cols.map((c, i) =>
-    '<div><div class="pos">' + c + '</div>' +
-    '<select id="g' + i + '"><option value="">天干</option>' + (i === 3 ? '<option value="?">不知道</option>' : '') + [...Wuxing.GAN].map(x => '<option>' + x + '</option>').join('') + '</select>' +
-    '<select id="z' + i + '"><option value="">地支</option>' + (i === 3 ? '<option value="?">不知道</option>' : '') + [...Wuxing.ZHI].map(x => '<option>' + x + '</option>').join('') + '</select></div>'
-  ).join('');
+  const g = ['', '', '', ''], z = ['', '', '', ''];
+  let act = { t: 'g', i: 0 };
+  const order = [0, 1, 2, 3].flatMap(i => [{ t: 'g', i }, { t: 'z', i }]);
+  const val = s => (s.t === 'g' ? g : z)[s.i];
+  const nextEmpty = () => order.find(s => !val(s)) || null;
+
+  function render() {
+    $('picks').innerHTML = cols.map((c, i) => '<div><div class="pos">' + c + '</div>' + ['g', 'z'].map(t => {
+      const v = (t === 'g' ? g : z)[i], on = act && act.t === t && act.i === i;
+      const txt = v === '?' ? '？' : v || (t === 'g' ? '天干' : '地支');
+      return '<button type="button" class="slot' + (v ? '' : ' ph') + (on ? ' on' : '') + '" data-t="' + t + '" data-i="' + i + '"' +
+        (v && v !== '?' ? ' style="color:' + colorOf(v) + '"' : '') + '>' + txt + '</button>';
+    }).join('') + '</div>').join('');
+    $('picks').querySelectorAll('.slot').forEach(b => { b.onclick = () => { act = { t: b.dataset.t, i: +b.dataset.i }; render(); }; });
+    if (!act) { $('kb').classList.add('hidden'); return; }
+    $('kb').classList.remove('hidden');
+    const { t, i } = act;
+    const known = g[i] && g[i] !== '?';
+    const keys = t === 'g' ? [...Wuxing.GAN] : [...Wuxing.ZHI].filter((x, k) => !known || k % 2 === Wuxing.GAN.indexOf(g[i]) % 2);
+    $('kbT').textContent = '选' + cols[i] + (t === 'g' ? '的天干' : '的地支') + (t === 'z' && known ? '（' + g[i] + '是' + yyOf(g[i]) + '干，只配' + yyOf(g[i]) + '支）' : '');
+    $('keys').className = 'keys ' + (keys.length === 10 ? 'k5' : 'k6');
+    $('keys').innerHTML = keys.map(x => '<button type="button" class="key" data-v="' + x + '" style="color:' + colorOf(x) + '">' + x + '<small>' + yyOf(x) + wxOf(x) + '</small></button>').join('') +
+      (i === 3 ? '<button type="button" class="key unk" data-v="?">不知道时辰</button>' : '');
+    $('keys').querySelectorAll('.key').forEach(b => { b.onclick = () => pick(b.dataset.v); });
+  }
+
+  function pick(v) {
+    const { t, i } = act;
+    $('err').textContent = '';
+    if (v === '?') { g[3] = '?'; z[3] = '?'; act = nextEmpty(); render(); return; }
+    if (t === 'g') {
+      g[i] = v;
+      if (z[i] === '?' || (z[i] && Wuxing.ZHI.indexOf(z[i]) % 2 !== Wuxing.GAN.indexOf(v) % 2)) z[i] = '';   // 阴阳对不上就清掉地支
+      act = !z[i] ? { t: 'z', i } : nextEmpty();
+    } else {
+      if (g[i] === '?') g[i] = '';
+      z[i] = v;
+      act = nextEmpty();
+    }
+    render();
+  }
+  render();
+
   $('go').onclick = () => {
     let s = '';
     for (let i = 0; i < 4; i++) {
-      const g = $('g' + i).value, z = $('z' + i).value;
-      if (i === 3 && (g === '?' || z === '?')) break;
-      if (!g || !z) { $('err').textContent = '「' + cols[i] + '」还没选完'; return; }
-      s += g + z;
+      if (i === 3 && (g[3] === '?' || z[3] === '?')) break;
+      if (!g[i] || !z[i]) { $('err').textContent = '「' + cols[i] + '」还没选完'; act = { t: !g[i] ? 'g' : 'z', i }; render(); return; }
+      s += g[i] + z[i];
     }
     if (!Wuxing.parse(s)) { $('err').textContent = '有一柱的天干地支配不上（阳干配阳支、阴干配阴支），再对一下排盘'; return; }
     const n = $('nm').value.trim();
@@ -360,11 +416,11 @@ function showResult() {
   $('cTaste').textContent = '喜好口味：' + r.tastes.join('、') + (r.veg ? '；多吃蔬菜，少吃肉' : '');
   $('cDir').innerHTML = '你的方向在<b>' + esc(r.dirText) + '</b>';
   $('cCities').innerHTML = r.cities.map(c => '<span>' + esc(c) + '</span>').join('') + r.countries.map(c => '<span class="abroad">' + esc(c) + '</span>').join('');
-  $('cBazi').textContent = '八字  ' + r.pillars.join('  ') + (r.has4 ? '' : '（没有时柱）');
+  $('cBazi').innerHTML = '八字  ' + r.pillars.map(p => paint(p[0]) + paint(p[1])).join('  ') + (r.has4 ? '' : '（没有时柱）');
 
   // 怎么算的
   const pos = ['年', '月', '日', '时'];
-  $('pillars').innerHTML = r.pillars.map((x, i) => '<div class="col' + (i === 2 ? ' day' : '') + '"><div class="pos">' + pos[i] + '柱</div><div class="gz">' + x[0] + '<br>' + x[1] + '</div></div>').join('') +
+  $('pillars').innerHTML = r.pillars.map((x, i) => '<div class="col' + (i === 2 ? ' day' : '') + '"><div class="pos">' + pos[i] + '柱</div><div class="gz">' + paint(x[0]) + '<br>' + paint(x[1]) + '</div></div>').join('') +
     (r.has4 ? '' : '<div class="col"><div class="pos">时柱</div><div class="gz">？<br>？</div></div>');
   $('score').innerHTML = '<tr><th>位置</th><th>怎么算</th><th>帮身</th><th>耗身</th></tr>' +
     r.rows.map(row => '<tr><td class="p">' + row.pos + ' <b>' + row.ch + '</b></td><td>' +
