@@ -255,7 +255,7 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
       <div class="label">你的名字</div>
       <input class="name" id="nm" maxlength="8" placeholder="可以不填，填了会印在卡上">
       <div class="label">你的老家</div>
-      <select class="name" id="homeProv"><option value="">出生的省份（可以不填）</option></select>
+      <select class="name" id="homeProv"><option value="">出生的省份</option></select>
       <select class="name hidden" id="homeCity" style="margin-top:8px"></select>
       <div class="label">你的八字</div>
       <p class="how">照着你的八字排盘（用哪个排盘 App 都可以），从年柱天干开始点字，选完会自动跳到下一格。点格子可以改。不知道时辰的，时柱点「不知道时辰」。</p>
@@ -513,7 +513,8 @@ function showHome() {
   $('homeProv').onchange = () => {
     const list = Wuxing.HOME_CITY[$('homeProv').value] || [];
     $('homeCity').classList.toggle('hidden', list.length < 2);
-    $('homeCity').innerHTML = '<option value="">出生的城市（可以不填）</option>' + list.map(c => '<option>' + c[0] + '</option>').join('') + '<option value="">其他城市</option>';
+    $('homeCity').innerHTML = '<option value="">出生的城市</option>' + list.map(c => '<option>' + c[0] + '</option>').join('') + '<option value="其他">其他城市</option>';
+    $('err').textContent = '';
   };
   let feel = '';
   $('feel').querySelectorAll('button').forEach(b => { b.onclick = () => { feel = b.dataset.f; $('feel').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
@@ -527,7 +528,9 @@ function showHome() {
     }
     if (!Wuxing.parse(s)) { $('err').textContent = '有一柱的天干地支配不上（阳干配阳支、阴干配阴支），再对一下排盘'; return; }
     const n = $('nm').value.trim();
-    const h = $('homeProv').value, c = h ? $('homeCity').value : '';
+    const h = $('homeProv').value, needCity = (Wuxing.HOME_CITY[h] || []).length > 1, c = needCity ? $('homeCity').value : '';
+    if (!h) { $('err').textContent = '请选老家的省份'; $('homeProv').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('homeProv').focus(); return; }
+    if (needCity && !c) { $('err').textContent = '请选老家的城市'; $('homeCity').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('homeCity').focus(); return; }
     location.search = '?b=' + encodeURIComponent(s) + (n ? '&n=' + encodeURIComponent(n) : '') + (feel ? '&t=' + feel : '') + (h ? '&h=' + encodeURIComponent(h) : '') + (c ? '&c=' + encodeURIComponent(c) : '');
   };
 }
