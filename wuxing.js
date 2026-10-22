@@ -104,7 +104,49 @@
     return out;
   };
 
-  function judge(s) {
+
+  /* ---------- 10-21 第三版加的 ---------- */
+  // 《穷通宝鉴》调候：日干 × 月份（寅月到丑月），每格按原文「先…后…」排的天干，取前几个
+  // 原文对照：维基文库《穷通宝鉴》各篇开头。合写的月份（三夏己土、三冬丁火、三春戊土等）按合写那段取。
+  const MONTHS = '寅卯辰巳午未申酉戌亥子丑';
+  const TIAO = {
+    甲: ['丙癸', '庚戊丁', '庚壬', '癸丁', '癸丁庚', '丁庚', '丁庚', '丁丙庚', '丁癸', '庚丁丙', '丁庚丙', '庚丁'],
+    乙: ['丙癸', '丙癸', '癸丙', '癸', '癸丙', '癸丙', '丙癸己', '癸丙', '癸辛', '丙戊', '丙', '丙'],
+    丙: ['壬庚', '壬己', '壬甲', '壬庚', '壬庚', '壬庚', '壬戊', '壬癸', '甲壬', '甲戊庚壬', '壬戊', '壬甲'],
+    丁: ['庚甲', '庚甲', '甲庚', '甲庚', '壬庚癸', '甲壬庚', '甲庚丙', '甲庚丙', '甲庚', '甲庚', '甲庚', '甲庚'],
+    戊: ['丙甲癸', '丙甲癸', '甲丙癸', '甲丙癸', '壬甲丙', '癸丙甲', '丙癸甲', '丙癸', '甲癸丙', '甲丙', '丙甲', '丙甲'],
+    己: ['丙', '甲癸丙', '丙癸甲', '癸丙', '癸丙', '癸丙', '癸丙', '癸丙', '癸丙', '丙甲', '丙甲', '丙甲'],
+    庚: ['丙甲', '丁甲', '甲丁', '壬戊丙', '壬癸', '丁甲', '丁甲', '丁甲丙', '甲壬', '丁丙甲', '丁甲丙', '丙丁甲'],
+    辛: ['己壬', '壬甲', '壬甲', '壬甲', '壬己癸', '壬庚', '壬甲戊', '壬甲', '壬甲', '壬丙', '壬丙', '丙壬'],
+    壬: ['庚丙戊', '戊辛庚', '甲庚', '壬辛庚', '癸庚', '辛甲癸', '戊丁', '甲庚', '甲丙', '戊庚', '戊丙', '丙甲'],
+    癸: ['辛丙', '庚辛', '丙辛甲', '辛庚', '庚辛壬', '庚辛', '丁甲', '辛丙', '辛甲', '庚辛', '丙辛', '丙'],
+  };
+  const MONTH_NAME = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+
+  // 养你的地方：日干的长生位、禄位（临官）所在方位（火土同宫，阳顺阴逆）
+  const CHANGSHENG = { 甲: '亥', 乙: '午', 丙: '寅', 丁: '酉', 戊: '寅', 己: '酉', 庚: '巳', 辛: '子', 壬: '申', 癸: '卯' };
+  const LU = { 甲: '寅', 乙: '卯', 丙: '巳', 丁: '午', 戊: '巳', 己: '午', 庚: '申', 辛: '酉', 壬: '亥', 癸: '子' };
+  const ZHI_DIR = { 子: '北', 丑: '东北', 寅: '东北', 卯: '东', 辰: '东南', 巳: '东南', 午: '南', 未: '西南', 申: '西南', 酉: '西', 戌: '西北', 亥: '西北' };
+
+  // 外号：日干 × 强弱（偏强及以上 / 偏弱及以下），后面一句是毒舌
+  const NICK = {
+    甲: { s: ['人形参天树', '主意比树根还深，谁劝都不弯；当靠山一流，当下属很难。'], w: ['求浇水的小树苗', '心比天高，根还在长；给点阳光雨露，就能蹿个子。'] },
+    乙: { s: ['社交藤蔓精', '到哪都能攀上关系，一顿饭的工夫就和陌生人结拜。'], w: ['温室小花', '心思细到能听见叶子落地，换个环境要先蔫三天。'] },
+    丙: { s: ['人形小太阳', '走到哪亮到哪，显眼包本包；热情过头，偶尔会把人晒伤。'], w: ['阴天里的太阳', '想发光，电量只剩两成，得先充个电。'] },
+    丁: { s: ['人间小灯塔', '心里一团火，照着别人也照着自己，就是容易熬夜。'], w: ['风中小烛火', '怕风也怕冷，有人挡一下，就能亮一整晚。'] },
+    戊: { s: ['人形靠山', '稳到让人安心，也倔到让人头疼；一座山不会为谁挪地方。'], w: ['还在长的小土坡', '想当别人的靠山，先给自己多垫几层土。'] },
+    己: { s: ['万能后花园', '什么都接得住，什么都种得出；小心别被当成免费的地。'], w: ['漏水的小花盆', '心软能装，装太多就往外漏，记得先装自己。'] },
+    庚: { s: ['行走的开罐器', '嘴硬、扛事、刀子嘴；最受不了别人磨叽。'], w: ['还没开刃的宝剑', '锋芒都在，只差一块磨刀石。'] },
+    辛: { s: ['自带滤镜的钻石', '精致、挑剔、眼里揉不得沙子，连生气都要好看。'], w: ['藏在土里的珍珠', '明明很亮，只是还没被人挖出来。'] },
+    壬: { s: ['奔腾的大河', '脑子转得比谁都快，一个想法接一百个，就是停不下来。'], w: ['快干的小溪', '点子很多，力气不够，得找条支流汇一汇。'] },
+    癸: { s: ['行走的雨季', '情绪和灵感一样多，一下雨就停不下来。'], w: ['清晨的露水', '敏感又剔透，太阳一大就想躲。'] },
+  };
+  // 幸运色落到具体东西上
+  const LIP = { 火: ['番茄红', '正红', '砖红'], 土: ['奶茶色', '焦糖色', '豆沙色'], 金: ['裸粉色', '香槟色', '珠光杏色'], 水: ['梅子色', '浆果色', '黑樱桃色'] };
+  const HAIR = { 木: ['墨绿', '抹茶棕', '橄榄棕'], 火: ['酒红', '樱桃红', '红棕'], 土: ['栗棕', '焦糖棕', '奶茶棕'], 金: ['香槟金', '浅金', '银灰'], 水: ['蓝黑', '雾霾蓝', '黑茶色'] };
+
+  function judge(s, opt) {
+    opt = opt || {};
     const P = parse(s);
     if (!P) return { error: true };
     const has4 = P.length === 4;
@@ -177,12 +219,21 @@
     }
     let xiWx = xi.map(c => catWx(me, c)), jiWx = ji.map(c => catWx(me, c));
 
-    // 调候
-    const winter = '亥子丑'.includes(z[1]), summer = '巳午未'.includes(z[1]);
-    let tiaohou = '';
-    const lift = w => { if (xiWx.includes(w)) { xiWx = [w, ...xiWx.filter(x => x !== w)]; return true; } return false; };
-    if (winter) tiaohou = lift('火') ? '生在冬天，偏冷，火提到第一位来暖局。' : '生在冬天，偏冷；火在这个盘里是忌神，暖一点会舒服，少量就好。';
-    if (summer) tiaohou = lift('水') ? '生在夏天，偏燥，水提到第一位来润局。' : '生在夏天，偏燥；水在这个盘里是忌神，润一点会舒服，少量就好。';
+    // 调候：查《穷通宝鉴》，书上先用的五行，在喜用里就往前排；书上首选的是忌神，喜忌不改，只提一句
+    const mi = MONTHS.indexOf(z[1]);
+    const tStems = TIAO[dm][mi];
+    const tWx = [...new Set([...tStems].map(c => GAN_WX[c]))];
+    const fuyiOrder = xiWx.slice();
+    xiWx = [...tWx.filter(w => fuyiOrder.includes(w)), ...fuyiOrder.filter(w => !tWx.includes(w))];
+    let tiaohou = '《穷通宝鉴》：' + MONTH_NAME[mi] + dm + me + '先用' + [...tStems].join('、') + '。';
+    if (!fuyiOrder.includes(tWx[0])) tiaohou += tWx[0] + '在这个盘里是忌神，喜忌不改，只是需要一点' + tWx[0] + '调和，少量就好。';
+    // 体感：怕冷火往前，怕热水往前
+    let feelNote = '';
+    const feelW = opt.feel === 'cold' ? '火' : opt.feel === 'hot' ? '水' : '';
+    if (feelW) {
+      if (xiWx.includes(feelW)) { xiWx = [feelW, ...xiWx.filter(x => x !== feelW)]; feelNote = '你说' + (opt.feel === 'cold' ? '怕冷' : '怕热') + '，' + feelW + '排到了第一。'; }
+      else feelNote = '你说' + (opt.feel === 'cold' ? '怕冷' : '怕热') + '，但' + feelW + '在这个盘里是忌神，' + (opt.feel === 'cold' ? '暖' : '润') + '一点就好，别过头。';
+    }
 
     // 从格：满足才提
     let cong = '';
@@ -204,6 +255,8 @@
       }
     }
 
+    if (cong) { tiaohou = ''; feelNote = ''; }   // 从格的喜忌另取，不再按调候、体感调先后
+
     // 卡片内容
     const seed = P.reduce((a, p) => a + GAN.indexOf(p[0]) * 7 + ZHI.indexOf(p[1]) * 3, 0);
     const x0 = xiWx[0], x1 = xiWx[1];
@@ -221,7 +274,20 @@
     const veg = x0 === '木' || x1 === '木' || tuCount >= 3;
     const avoidDir = DIR[jiWx[0]].map(d => DIR_NAME[d]);
 
+    // 外号、口红、发色、头像底色、养你的地方
+    const nick = NICK[dm][strong ? 's' : 'w'];
+    const lipW = [x0, x1].find(w => w && LIP[w]);
+    const lip = lipW ? pick(LIP[lipW], 1, seed)[0] : '清透裸色';
+    const hair = pick(HAIR[x0], 1, seed)[0];
+    const avatar = colors[0];
+    const yangDirs = [...new Set([ZHI_DIR[CHANGSHENG[dm]], ZHI_DIR[LU[dm]]])];
+    let yangCities = [];
+    for (const d of yangDirs) yangCities = yangCities.concat(pick(CITY[d].filter(c => !cities.includes(c)), 2, seed));
+    const yangWhy = dm + '长生在' + CHANGSHENG[dm] + '（' + ZHI_DIR[CHANGSHENG[dm]] + '），禄在' + LU[dm] + '（' + ZHI_DIR[LU[dm]] + '）';
+
     return {
+      nick: nick[0], nickLine: nick[1], lip, hair, avatar, feelNote, tiaoStems: tStems,
+      yangDir: yangDirs.map(d => DIR_NAME[d]).join('和'), yangCities, yangWhy,
       pillars: P, has4, dm, me, rows, sum, total, pct, raw, index, level, strong, deling, ling: LING[z[1]], state: STATE[lingCat],
       roots, sheng, zhu, clash, tiaohou, cong, fuyi, xiWx, jiWx,
       label, phrase, colors, nums, dirText: dirs.map(d => DIR_NAME[d]).join('和'), cities, countries, tastes, veg, avoidDir,

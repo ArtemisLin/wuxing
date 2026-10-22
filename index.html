@@ -108,7 +108,18 @@ body {
 .c-head { text-align: center; padding-top: 14px; }
 .c-name { font-family: var(--sans); font-weight: 700; font-size: 30px; color: var(--soft); letter-spacing: 1px; } /* 名字是学员自己填的，字不一定在裁过的字体里，用系统字 */
 .c-label { font-family: var(--smiley); font-size: 62px; line-height: 1.15; color: var(--rose); text-shadow: 3px 3px 0 var(--rose-soft); letter-spacing: 2px; margin-top: 4px; }
-.c-phrase { font-size: 26px; color: var(--ink); margin-top: 6px; }
+.c-phrase { font-size: 23px; line-height: 1.5; color: var(--ink); margin: 8px 20px 0; }
+.c-sub { font-family: var(--pixel); font-size: 19px; color: var(--soft); margin-top: 6px; letter-spacing: 1px; }
+.c-items { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: 20px; color: var(--ink); }
+.c-items span b { font-family: var(--pixel); font-weight: 400; color: var(--rose); font-size: 18px; margin-right: 4px; }
+.c-items i { display: inline-block; width: 18px; height: 18px; border-radius: 50%; vertical-align: -2px; margin-right: 4px; border: 2px solid rgba(33, 29, 54, .12); }
+.c-dir2 { font-family: var(--smiley); font-size: 26px; color: var(--ink); margin-top: 16px; }
+.c-dir2 b { color: var(--purple); font-weight: 400; }
+.c-dir2 small { font-family: var(--sans); font-size: 16px; color: var(--soft); margin-left: 6px; }
+.tags span.yang { background: #ece9ff; border-color: #b9b2f3; }
+.feel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.feel button { height: 46px; border-radius: 12px; border: 2px solid var(--line); background: var(--cream2); font-family: var(--pixel); font-size: 17px; color: var(--soft); cursor: pointer; }
+.feel button.on { background: var(--rose); border-color: var(--rose); color: #fff; }
 .c-phrase::before { content: '「'; color: var(--line); }
 .c-phrase::after { content: '」'; color: var(--line); }
 
@@ -225,6 +236,8 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
       <p class="how">照着你的八字排盘（用哪个排盘 App 都可以），从年柱天干开始点字，选完会自动跳到下一格。点格子可以改。不知道时辰的，时柱点「不知道时辰」。</p>
       <div class="picks" id="picks"></div>
       <div class="kb hidden" id="kb"><div class="t" id="kbT"></div><div class="keys" id="keys"></div><div class="kb-foot" id="kbFoot"></div></div>
+      <div class="label">你怕冷还是怕热</div>
+      <div class="feel" id="feel"><button type="button" data-f="cold">怕冷</button><button type="button" data-f="hot">怕热</button><button type="button" data-f="" class="on">都还好</button></div>
       <div class="acts"><button class="btn big" id="go">生成我的五行卡 ▶</button></div>
       <p class="err" id="err"></p>
     </div>
@@ -244,6 +257,7 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
           <div class="c-head">
             <div class="c-name" id="cName"></div>
             <div class="c-label" id="cLabel"></div>
+            <div class="c-sub" id="cSub"></div>
             <div class="c-phrase" id="cPhrase"></div>
           </div>
           <div class="blk">
@@ -267,10 +281,13 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
             <div><h4>幸运色</h4><div class="sw" id="cColors"></div></div>
             <div><h4>幸运数字</h4><div class="nums" id="cNums"></div><div class="taste" id="cTaste"></div></div>
           </div>
+          <div class="c-items" id="cItems"></div>
           <div class="blk">
             <h4>天选城市</h4>
             <div class="c-dir" id="cDir"></div>
             <div class="tags" id="cCities"></div>
+            <div class="c-dir2" id="cDir2"></div>
+            <div class="tags" id="cYang"></div>
           </div>
           <div class="c-foot">
             <div class="l"><span id="cBazi"></span><br><b>以上解读来自谷雨悟道</b></div>
@@ -402,6 +419,8 @@ function showHome() {
     render();
   }
   render();
+  let feel = '';
+  $('feel').querySelectorAll('button').forEach(b => { b.onclick = () => { feel = b.dataset.f; $('feel').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
 
   $('go').onclick = () => {
     let s = '';
@@ -412,7 +431,7 @@ function showHome() {
     }
     if (!Wuxing.parse(s)) { $('err').textContent = '有一柱的天干地支配不上（阳干配阳支、阴干配阴支），再对一下排盘'; return; }
     const n = $('nm').value.trim();
-    location.search = '?b=' + encodeURIComponent(s) + (n ? '&n=' + encodeURIComponent(n) : '');
+    location.search = '?b=' + encodeURIComponent(s) + (n ? '&n=' + encodeURIComponent(n) : '') + (feel ? '&t=' + feel : '');
   };
 }
 
@@ -420,7 +439,7 @@ function showHome() {
 function wxBall(w, small) { return '<span class="wx' + (small ? ' s' : '') + '" style="' + (small ? 'color:' + WXC(w) + ';border-color:' + WXC(w) : 'background:' + WXC(w)) + '">' + w + '</span>'; }
 
 function showResult() {
-  const r = Wuxing.judge(b);
+  const r = Wuxing.judge(b, { feel: q.get('t') || '' });
   if (r.error) { showHome(); $('err').textContent = '链接里的八字看不懂，请在上面重新选一次'; return; }
   $('result').classList.remove('hidden');
   if (q.has('only')) { $('how').classList.add('hidden'); $('acts').classList.add('hidden'); document.querySelector('.taskbar').classList.add('hidden'); document.body.style.padding = '10px'; }
@@ -428,8 +447,9 @@ function showResult() {
 
   // 卡
   $('cName').textContent = (nameQ || '我') + '的五行喜忌';
-  $('cLabel').textContent = r.label;
-  $('cPhrase').textContent = r.phrase;
+  $('cLabel').textContent = r.nick;
+  $('cSub').textContent = r.label + ' · ' + r.level;
+  $('cPhrase').textContent = r.nickLine;
   $('cLevel').innerHTML = esc(r.level) + '<small>' + (r.deling ? '得令' : '失令') + ' · ' + r.ling + '当令</small>';
   $('cLevel').style.fontSize = r.level.length > 2 ? '56px' : '';
   const ix = Math.round(r.index);
@@ -442,12 +462,15 @@ function showResult() {
   $('cJi').innerHTML = r.jiWx.map(w => wxBall(w, true)).join('');
   const notes = [];
   if (r.cong) notes.push('<b>这个盘可能是' + r.cong + '格</b>，喜忌按' + r.cong + '取，和一般的盘相反；拿不准可以请懂行的老师再看看。');
-  else if (r.tiaohou) notes.push(r.tiaohou);
+  else { if (r.tiaohou) notes.push(r.tiaohou); if (r.feelNote) notes.push(r.feelNote); }
   $('cNote').innerHTML = notes.join('<br>');
   $('cColors').innerHTML = r.colors.map(([n, h]) => '<div><i style="background:' + h + '"></i><span>' + n + '</span></div>').join('');
   $('cNums').textContent = r.nums.join(' ');
   $('cTaste').textContent = '喜好口味：' + r.tastes.join('、') + (r.veg ? '；多吃蔬菜，少吃肉' : '');
+  $('cItems').innerHTML = '<span><b>口红</b>' + esc(r.lip) + '</span><span><b>发色</b>' + esc(r.hair) + '</span><span><b>头像底色</b><i style="background:' + r.avatar[1] + '"></i>' + esc(r.avatar[0]) + '</span>';
   $('cDir').innerHTML = '你的方向在<b>' + esc(r.dirText) + '</b>';
+  $('cDir2').innerHTML = '养你的地方在<b>' + esc(r.yangDir) + '</b><small>' + esc(r.yangWhy) + '</small>';
+  $('cYang').innerHTML = r.yangCities.map(c => '<span class="yang">' + esc(c) + '</span>').join('');
   $('cCities').innerHTML = r.cities.map(c => '<span>' + esc(c) + '</span>').join('') + r.countries.map(c => '<span class="abroad">' + esc(c) + '</span>').join('');
   $('cBazi').innerHTML = '八字  ' + r.pillars.map(p => paint(p[0]) + paint(p[1])).join('  ') + (r.has4 ? '' : '（没有时柱）');
 
