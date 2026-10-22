@@ -73,6 +73,11 @@ body {
 .key small { font-family: var(--pixel); font-size: 11px; opacity: .85; }
 .key:active { transform: translateY(1px); }
 .key.unk { grid-column: 1 / -1; height: 44px; font-family: var(--pixel); font-size: 16px; color: var(--soft); }
+.key.cur { outline: 3px solid var(--rose); outline-offset: 2px; }
+.kb-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px; }
+.kb-foot:empty { display: none; }
+.kb-foot button { font-family: var(--pixel); font-size: 15px; padding: 6px 13px; border-radius: 15px; border: 2px solid var(--line); background: #fff; color: var(--rose); cursor: pointer; }
+.kb-foot button.clr { color: var(--soft); }
 .acts { display: flex; gap: 12px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
 .btn { font-family: var(--pixel); font-size: 19px; padding: 11px 28px; border-radius: 26px; border: 2.5px solid var(--rose); cursor: pointer; background: var(--rose); color: #fff; letter-spacing: 1px; text-decoration: none; box-shadow: 0 4px 0 #b30062; }
 .btn.big { width: 100%; font-size: 21px; padding: 13px 0; }
@@ -219,7 +224,7 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
       <div class="label">你的八字</div>
       <p class="how">照着你的八字排盘（用哪个排盘 App 都可以），从年柱天干开始点字，选完会自动跳到下一格。点格子可以改。不知道时辰的，时柱点「不知道时辰」。</p>
       <div class="picks" id="picks"></div>
-      <div class="kb hidden" id="kb"><div class="t" id="kbT"></div><div class="keys" id="keys"></div></div>
+      <div class="kb hidden" id="kb"><div class="t" id="kbT"></div><div class="keys" id="keys"></div><div class="kb-foot" id="kbFoot"></div></div>
       <div class="acts"><button class="btn big" id="go">生成我的五行卡 ▶</button></div>
       <p class="err" id="err"></p>
     </div>
@@ -341,16 +346,44 @@ function showHome() {
         (v && v !== '?' ? ' style="color:' + colorOf(v) + '"' : '') + '>' + txt + '</button>';
     }).join('') + '</div>').join('');
     $('picks').querySelectorAll('.slot').forEach(b => { b.onclick = () => { act = { t: b.dataset.t, i: +b.dataset.i }; render(); }; });
-    if (!act) { $('kb').classList.add('hidden'); return; }
     $('kb').classList.remove('hidden');
+    const filled = order.some(s => val(s));
+    const foot = [];
+    if (filled && (!act || order.findIndex(s => s.t === act.t && s.i === act.i) > 0)) foot.push('<button type="button" data-a="back">⌫ 退一格</button>');
+    if (act && act.t === 'z' && g[act.i] && g[act.i] !== '?') foot.push('<button type="button" data-a="gan">改天干</button>');
+    if (filled) foot.push('<button type="button" class="clr" data-a="clear">清空重选</button>');
+    $('kbFoot').innerHTML = foot.join('');
+    $('kbFoot').querySelectorAll('button').forEach(b => { b.onclick = () => tool(b.dataset.a); });
+    if (!act) {
+      $('kbT').textContent = '八个字都选好了。要改哪个字，点上面那一格。';
+      $('keys').className = 'keys'; $('keys').innerHTML = '';
+      return;
+    }
     const { t, i } = act;
     const known = g[i] && g[i] !== '?';
     const keys = t === 'g' ? [...Wuxing.GAN] : [...Wuxing.ZHI].filter((x, k) => !known || k % 2 === Wuxing.GAN.indexOf(g[i]) % 2);
     $('kbT').textContent = '选' + cols[i] + (t === 'g' ? '的天干' : '的地支') + (t === 'z' && known ? '（' + g[i] + '是' + yyOf(g[i]) + '干，只配' + yyOf(g[i]) + '支）' : '');
     $('keys').className = 'keys ' + (keys.length === 10 ? 'k5' : 'k6');
-    $('keys').innerHTML = keys.map(x => '<button type="button" class="key" data-v="' + x + '" style="color:' + colorOf(x) + '">' + x + '<small>' + yyOf(x) + wxOf(x) + '</small></button>').join('') +
+    const cur = (t === 'g' ? g : z)[i];
+    $('keys').innerHTML = keys.map(x => '<button type="button" class="key' + (x === cur ? ' cur' : '') + '" data-v="' + x + '" style="color:' + colorOf(x) + '">' + x + '<small>' + yyOf(x) + wxOf(x) + '</small></button>').join('') +
       (i === 3 ? '<button type="button" class="key unk" data-v="?">不知道时辰</button>' : '');
     $('keys').querySelectorAll('.key').forEach(b => { b.onclick = () => pick(b.dataset.v); });
+  }
+
+  // 退一格、改天干、清空重选
+  function tool(a) {
+    $('err').textContent = '';
+    if (a === 'clear') { g.fill(''); z.fill(''); act = order[0]; }
+    else if (a === 'gan') { act = { t: 'g', i: act.i }; }
+    else if (a === 'back') {
+      const k = act ? order.findIndex(s => s.t === act.t && s.i === act.i) : order.length;
+      let j = k - 1;
+      while (j > 0 && !val(order[j])) j--;          // 跳过还空着的格子，退到上一个选过的字
+      const p = order[j];
+      if (val(p) === '?') { g[3] = ''; z[3] = ''; act = { t: 'g', i: 3 }; }
+      else { (p.t === 'g' ? g : z)[p.i] = ''; act = p; }
+    }
+    render();
   }
 
   function pick(v) {
