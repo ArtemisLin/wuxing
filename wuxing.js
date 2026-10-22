@@ -208,6 +208,21 @@
     西: [['美国', 1], ['加拿大', 1], ['英国', 1], ['法国', 1], ['德国', 1], ['瑞士', 1], ['意大利', 1], ['西班牙', 1]],
     西北: [['瑞典', 1], ['挪威', 1], ['芬兰', 1], ['丹麦', 1], ['冰岛', 1]],
   };
+  // 一句话建议：按第一喜用跟日主的关系取
+  const SOCIAL = {
+    生我: '多跟比你年长、懂行的人待在一起，遇事先请教，别一个人硬扛。',
+    同我: '找两三个同频的搭子，一起做事比单打独斗走得远。',
+    我生: '多开口、多分享，你的魅力在说出来的那一刻。',
+    我克: '交朋友讲实在，互相帮得上的关系最长久；该请客就大方请。',
+    克我: '跟有分寸、有规矩的人走近一点，他们会把你带得更好。',
+  };
+  const WORK = {
+    生我: '适合在大平台、有人带的地方，先学透再出手；考证、深造都划算。',
+    同我: '适合合伙、团队作战；找个靠谱搭档，比一个人拼强。',
+    我生: '适合靠输出吃饭：写、讲、设计、做内容，作品就是你的名片。',
+    我克: '适合直接对结果负责：销售、经营、项目、管钱，拿到手的回报才算数。',
+    克我: '适合有目标、有考核的环境：大公司、体制内、比赛，给自己定截止日。',
+  };
   const CENTER = [32.5, 113.5];   // 全国中部（郑州、武汉之间）
   const DIR_DEG = { 北: 0, 东北: 45, 东: 90, 东南: 135, 南: 180, 西南: 225, 西: 270, 西北: 315 };
   // 方位里的五行：四隅的两个地支，一个土、一个本方
@@ -397,6 +412,7 @@
     const yangWhy = dm + '长生在' + CHANGSHENG[dm] + '（' + ZHI_DIR[CHANGSHENG[dm]] + '），禄在' + LU[dm] + '（' + ZHI_DIR[LU[dm]] + '）';
 
     return {
+      social: SOCIAL[rel(me, x0)], work: WORK[rel(me, x0)],
       nick: nick[0], nickLine: nick[1], lip, hair, avatar, feelNote, tiaoStems: tStems, home, homeLine, cityNotes,
       yangDir: yangDirs.map(d => DIR_NAME[d]).join('和'), yangCities, yangWhy,
       pillars: P, has4, dm, me, rows, sum, total, pct, raw, index, level, strong, deling, ling: LING[z[1]], state: STATE[lingCat],

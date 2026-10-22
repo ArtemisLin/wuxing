@@ -59,6 +59,9 @@ body {
 .name { width: 100%; height: 48px; border-radius: 10px; border: 2px solid var(--line); background: var(--cream2); font-size: 18px; padding: 0 14px; color: var(--ink); font-family: var(--sans); }
 .name:focus { outline: 3px solid var(--rose-soft); }
 select.name { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--line) 50%), linear-gradient(135deg, var(--line) 50%, transparent 50%); background-position: calc(100% - 22px) 21px, calc(100% - 15px) 21px; background-size: 7px 7px; background-repeat: no-repeat; }
+.adv { display: grid; gap: 10px; }
+.adv div { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 21px; line-height: 1.5; color: var(--ink); }
+.adv b { font-family: var(--pixel); font-weight: 400; font-size: 18px; color: #fff; background: var(--purple); border-radius: 10px; text-align: center; padding: 3px 0; margin-top: 2px; }
 .c-home { margin-top: 14px; padding: 10px 14px; border-radius: 12px; background: var(--pink); font-size: 19px; line-height: 1.5; color: var(--ink); }
 .c-cnote { margin-top: 10px; font-size: 16px; line-height: 1.5; color: var(--soft); }
 .picks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; text-align: center; margin-top: 10px; }
@@ -302,6 +305,10 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
             <div class="xj-legend" id="cLegend"></div>
             <div class="c-note" id="cNote"></div>
           </div>
+          <div class="blk">
+            <h4>给你的建议</h4>
+            <div class="adv" id="cAdv"></div>
+          </div>
           <div class="blk c-two">
             <div><h4>幸运色</h4><div class="sw" id="cColors"></div></div>
             <div><h4>幸运数字</h4><div class="nums" id="cNums"></div><div class="taste" id="cTaste"></div></div>
@@ -313,7 +320,6 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
             <div class="tags" id="cCities"></div>
             <div class="c-dir2" id="cDir2"></div>
             <div class="tags" id="cYang"></div>
-            <div class="c-cnote" id="cCnote"></div>
             <div class="c-home" id="cHome"></div>
           </div>
           <div class="c-foot">
@@ -330,20 +336,6 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
     <p class="hint" id="saveHint"></p>
   </div>
 
-  <section class="win" id="how">
-    <div class="bar"><span>怎么算的.exe</span><span class="btns"><i></i><i></i><i></i></span></div>
-    <div class="body">
-      <div class="label">四柱</div>
-      <div class="pillars" id="pillars"></div>
-      <div class="label">打分表</div>
-      <table class="sc" id="score"></table>
-      <div class="sum5" id="sum5"></div>
-      <div class="label">为什么是这个结果</div>
-      <ul class="why" id="why"></ul>
-      <div class="label">怎么算</div>
-      <div class="rule">每个字先归成五类：生我、同我（帮身），克我、我生、我克（耗身）。位置分：月支 4、日支 2、月干和时干 1.5、年干、年支、时支各 1；地支按本气算；相邻地支冲或合，各打七折。<br>帮身占比再换算成强弱值：50 是中正（一半的人在 50 以上），往两边依次是偏强、强、很强、非常强，偏弱、弱、很弱、非常弱。<br>偏弱及以下补生我、同我；偏强及以上取克我、我生、我克。冬天生的火提前，夏天生的水提前。</div>
-    </div>
-  </section>
 </div>
 
 
@@ -560,43 +552,19 @@ function showResult() {
   $('cLegend').innerHTML = '<b>喜</b>' + r.xiWx.map(w => '<span style="color:' + WX_COLOR[w] + '">' + w + '</span>').join(' › ') + '<b class="j">忌</b>' + r.jiWx.map(w => '<span style="color:' + WX_COLOR[w] + '">' + w + '</span>').join('、');
   const notes = [];
   if (r.cong) notes.push('<b>这个盘可能是' + r.cong + '格</b>，喜忌按' + r.cong + '取，和一般的盘相反；拿不准可以请懂行的老师再看看。');
-  else { if (r.tiaohou) notes.push(r.tiaohou); if (r.feelNote) notes.push(r.feelNote); }
   $('cNote').innerHTML = notes.join('<br>');
+  $('cAdv').innerHTML = '<div><b>社交</b><span>' + esc(r.social) + '</span></div><div><b>工作</b><span>' + esc(r.work) + '</span></div>';
   $('cColors').innerHTML = r.colors.map(([n, h]) => '<div><i style="background:' + h + '"></i><span>' + n + '</span></div>').join('');
   $('cNums').textContent = r.nums.join(' ');
   $('cTaste').textContent = '喜好口味：' + r.tastes.join('、') + (r.veg ? '；多吃蔬菜，少吃肉' : '');
   $('cItems').innerHTML = '<span><b>口红</b>' + esc(r.lip) + '</span><span><b>发色</b>' + esc(r.hair) + '</span><span><b>头像底色</b><i style="background:' + r.avatar[1] + '"></i>' + esc(r.avatar[0]) + '</span>';
   $('cDir').innerHTML = '你的方向在<b>' + esc(r.dirText) + '</b>';
-  $('cDir2').innerHTML = '养你的地方在<b>' + esc(r.yangDir) + '</b><small>' + esc(r.yangWhy) + '</small>';
+  $('cDir2').innerHTML = '养你的地方在<b>' + esc(r.yangDir) + '</b>';
   $('cYang').innerHTML = r.yangCities.map(c => '<span class="yang">' + esc(c) + '</span>').join('');
-  $('cCnote').textContent = r.cityNotes.join(' ');
   if (r.homeLine) $('cHome').textContent = r.homeLine; else $('cHome').classList.add('hidden');
   $('cCities').innerHTML = r.cities.map(c => '<span>' + esc(c) + '</span>').join('') + r.countries.map(c => '<span class="abroad">' + esc(c) + '</span>').join('');
   $('cBazi').innerHTML = '八字  ' + r.pillars.map(p => paint(p[0]) + paint(p[1])).join('  ') + (r.has4 ? '' : '（没有时柱）');
 
-  // 怎么算的
-  const pos = ['年', '月', '日', '时'];
-  $('pillars').innerHTML = r.pillars.map((x, i) => '<div class="col' + (i === 2 ? ' day' : '') + '"><div class="pos">' + pos[i] + '柱</div><div class="gz">' + paint(x[0]) + '<br>' + paint(x[1]) + '</div></div>').join('') +
-    (r.has4 ? '' : '<div class="col"><div class="pos">时柱</div><div class="gz">？<br>？</div></div>');
-  $('score').innerHTML = '<tr><th>位置</th><th>怎么算</th><th>帮身</th><th>耗身</th></tr>' +
-    r.rows.map(row => '<tr><td class="p">' + row.pos + ' <b>' + row.ch + '</b></td><td>' +
-      row.parts.map(x => '<span class="' + (x.cat === '生我' || x.cat === '同我' ? 'h' : '') + '">' + x.ch + (row.pos.endsWith('支') ? '（本气）' : '') + ' ' + x.cat + ' ' + f2(x.v) + '</span>').join('、') +
-      (row.disc < 1 ? '（冲合打折）' : '') + '</td><td class="n">' + f2(row.help) + '</td><td class="n">' + f2(row.hurt) + '</td></tr>').join('') +
-    '<tr class="tot"><td colspan="2">合计</td><td class="n">' + f2(r.sum.生我 + r.sum.同我) + '</td><td class="n">' + f2(r.sum.克我 + r.sum.我生 + r.sum.我克) + '</td></tr>';
-  $('sum5').innerHTML = ['生我', '同我', '克我', '我生', '我克'].map(c => '<div class="' + (c === '生我' || c === '同我' ? 'h' : '') + '">' + c + '（' + Wuxing.catWx(r.me, c) + '）<b>' + f2(r.sum[c]) + '</b></div>').join('');
-  const rootTxt = r.roots.length ? r.roots.map(x => x.pos + x.zhi + '里的' + x.ch + (x.k === 0 ? '（本气）' : x.k === 1 ? '（中气）' : '（余气）') + (x.broken ? '，被冲' : '')).join('；') : '地支里没有和日主同五行的字';
-  const why = [
-    '<b>日主</b>：' + r.dm + r.me + '，生在' + r.pillars[1][1] + '月，' + r.ling + '当令，' + r.me + '在这个月是「' + r.state + '」，' + (r.deling ? '得令' : '失令') + '。',
-    '<b>得地</b>：' + rootTxt + '。',
-    '<b>得生、得助</b>：生我的字 ' + (r.sheng.join('、') || '没有') + '；天干上同我的字 ' + (r.zhu.join('、') || '没有') + '。',
-    (r.clash.length ? '<b>冲合</b>：' + r.clash.join('，') + '，这两支的分数打七折。' : '<b>冲合</b>：相邻地支没有六冲、六合。'),
-    '<b>结论</b>：帮身占 ' + Math.round(r.raw * 10) / 10 + '%，换算成强弱值 ' + Math.round(r.index) + '（50 是中正），' + r.level + '。' + (r.strong ? '帮身的力量够了，喜克我、我生、我克来平衡。' : '帮身的力量不够，喜生我、同我来补。'),
-  ];
-  if (r.tiaohou) why.push('<b>寒暖</b>：' + r.tiaohou);
-  why.push('<b>城市</b>：先按喜用的方位挑，海外以发达国家为主；东北、西北、内蒙古、山西、西藏这些苦寒偏远的城市，只推荐给老家在那一片的人；挑不够，就从老家（没填就从全国中部）往这个方向找好去的城市。' + (r.cityNotes.length ? r.cityNotes.join(' ') : ''));
-  if (r.homeLine) why.push('<b>老家</b>：' + r.homeLine);
-  if (r.cong) why.push('<b>从格</b>：' + (r.cong === '从弱' ? '帮身不到 25%，日主没有站得住的根，天干也没有帮手' : '帮身 85% 以上') + '，可能是' + r.cong + '格。按一般的盘看，喜 ' + r.fuyi.xiWx.join('、') + '，忌 ' + r.fuyi.jiWx.join('、') + '；卡上写的是' + r.cong + '格的喜忌。');
-  $('why').innerHTML = why.map(x => '<li>' + x + '</li>').join('');
 
   fit();
   window.addEventListener('resize', fit);
