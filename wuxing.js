@@ -238,7 +238,7 @@
     return { 生我: same ? '偏印' : '正印', 同我: same ? '比肩' : '劫财', 克我: same ? '七杀' : '正官', 我生: same ? '食神' : '伤官', 我克: same ? '偏财' : '正财' }[r];
   }
   // E/I：日干坐下的状态、坐下的十神
-  const STAGE_EI = { 长生: 1, 沐浴: 1, 冠带: 0.8, 临官: 1, 帝旺: 1.2, 衰: 0, 病: -0.5, 死: -1.5, 墓: -1.5, 绝: -1.5, 胎: -0.5, 养: -0.3 };
+  const STAGE_EI = { 长生: 1, 沐浴: 0, 冠带: 0.8, 临官: 1, 帝旺: 1.2, 衰: 0, 病: -0.5, 死: -1.5, 墓: -1.5, 绝: -1.5, 胎: -0.5, 养: -0.3 };
   const ZUO_EI = { 食神: 0.8, 伤官: 1, 偏财: 0.5, 正财: 0.5, 比肩: 0, 劫财: 0.3, 正官: -0.3, 七杀: 0, 正印: -0.8, 偏印: -1.5 };
   // 每个字的分量：月令里的旺相休囚死（rel(当令, 它)），天干没根再打折
   const SEASON_W = { 同我: 1.2, 我生: 1.0, 生我: 0.8, 克我: 0.6, 我克: 0.5 };
@@ -249,6 +249,11 @@
     TF: '命里讲道理，心里很柔软', FT: '命里重感情，嘴上讲逻辑',
     JP: '命里要规矩，活得很随性', PJ: '命里爱自由，硬是把自己管得很好',
   };
+  // 十神的性格倾向投票：正数＝E、S、T、J，负数＝I、N、F、P（依据十神的通常性格描述，不是拿个例凑的）
+  const MBTI_VOTE = {
+    正印: [-1, 1, -1, 1], 偏印: [-1, -1, 1, -1], 比肩: [-1, 0, 1, 0], 劫财: [1, 0, 0, -1], 食神: [1, 0, -1, -1],
+    伤官: [1, -1, -1, -1], 正官: [0, 1, 0, 1], 七杀: [0, -1, 1, 1], 正财: [0, 1, 0, 1], 偏财: [1, 1, -1, -1],
+  };
   function mbtiOf(P, dm, index) {
     const g = P.map(p => p[0]), z = P.map(p => p[1]), ling = LING[z[1]];
     const w = { 正印: 0, 偏印: 0, 比肩: 0, 劫财: 0, 正官: 0, 七杀: 0, 食神: 0, 伤官: 0, 正财: 0, 偏财: 0 };
@@ -256,13 +261,12 @@
     g.forEach((c, i) => { if (i === 2) return; w[shishen(dm, c)] += W_GAN[i] * SEASON_W[rel(ling, GAN_WX[c])] * (rooted(c) ? 1 : 0.6); });
     z.forEach((b, i) => { const c = CG[b][0]; w[shishen(dm, c)] += W_ZHI[i] * SEASON_W[rel(ling, GAN_WX[c])]; });
     const tot = Object.values(w).reduce((a, b) => a + b, 0) || 1;
-    const yin = w.正印 + w.偏印, bi = w.比肩 + w.劫财, guan = w.正官 + w.七杀, shi = w.食神 + w.伤官, cai = w.正财 + w.偏财;
-    const stage = stageOf(dm, z[2]), zuo = shishen(dm, CG[z[2]][0]);
-    const ei = (GAN.indexOf(dm) % 2 === 0 ? 0.8 : -0.8) + STAGE_EI[stage] + ZUO_EI[zuo] + 2 * (shi + cai - yin) / tot + 0.02 * (index - 50);
-    const me = GAN_WX[dm];
-    const tf = me === '金' || me === '水' ? 'T' : me === '木' || me === '火' ? 'F' : (guan + bi >= yin + shi ? 'T' : 'F');
-    const type = (ei > 0 ? 'E' : 'I') + (cai + guan > yin + shi ? 'S' : 'N') + tf + (guan + w.正印 > shi + bi + w.偏印 ? 'J' : 'P');
-    return { type, name: MBTI_NAME[type], stage, zuo, ei: Math.round(ei * 100) / 100 };
+    const v = [0, 1, 2, 3].map(k => Object.keys(w).reduce((a, t) => a + w[t] * MBTI_VOTE[t][k], 0) / tot * 2);
+    const stage = stageOf(dm, z[2]), zuo = shishen(dm, CG[z[2]][0]), me = GAN_WX[dm];
+    // E/I 再看日干：阴阳、坐下的十二长生状态、坐下的十神（谷雨：自坐偏印偏内，死墓绝即使阳干也偏 I）
+    v[0] += (GAN.indexOf(dm) % 2 === 0 ? 0.4 : -0.4) + STAGE_EI[stage] + ZUO_EI[zuo] + 0.01 * (index - 50);
+    const type = (v[0] > 0 ? 'E' : 'I') + (v[1] > 0 ? 'S' : 'N') + (v[2] > 0 ? 'T' : 'F') + (v[3] > 0 ? 'J' : 'P');
+    return { type, name: MBTI_NAME[type], stage, zuo, score: v.map(x => Math.round(x * 100) / 100), weight: w };
   }
   const CENTER = [32.5, 113.5];   // 全国中部（郑州、武汉之间）
   const DIR_DEG = { 北: 0, 东北: 45, 东: 90, 东南: 135, 南: 180, 西南: 225, 西: 270, 西北: 315 };
