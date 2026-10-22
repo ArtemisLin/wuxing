@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>五行喜忌卡</title>
+<style>
+/* 画风跟「拉拉鉴定所」一套，取自「谷雨 × HERSTORY」易拉宝：粉色双线窗口、奶油底、像素字、四角星、浅色网格 */
+@font-face { font-family: 'Pixel'; src: url('ui/pixel.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Smiley'; src: url('ui/smiley.woff2') format('woff2'); font-display: swap; }
+:root {
+  --bg: #fdf5f8;
+  --grid: #f5dde7;
+  --line: #e98fb0;
+  --rose: #e2007a;
+  --rose-soft: #ffc6dc;
+  --bar: #fcd9e5;
+  --cream: #fff3df;
+  --cream2: #fffaf2;
+  --pink: #fbd6e2;
+  --purple: #4b3fd6;
+  --ink: #211d36;
+  --soft: #5b5670;
+  --mute: #a59fb5;
+  /* 五行色，跟课件一致 */
+  --木: #1e8e47; --火: #c93a28; --土: #8a5416; --金: #ae8400; --水: #1f6dbf;
+  --sans: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --pixel: 'Pixel', var(--sans);
+  --smiley: 'Smiley', var(--sans);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { color: var(--ink); font-family: var(--sans); overflow-x: hidden; }
+body {
+  min-height: 100vh; padding: 26px 16px 90px;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.hidden { display: none !important; }
+.deco { position: fixed; pointer-events: none; z-index: 0; }
+
+/* ---------- 窗口 ---------- */
+.win { position: relative; z-index: 1; background: var(--cream); border: 2.5px solid var(--line); border-radius: 16px; box-shadow: 0 0 0 4px var(--cream2), 0 0 0 6px var(--line), 0 14px 34px rgba(226, 0, 122, .10); }
+.win > .bar { display: flex; align-items: center; justify-content: space-between; height: 42px; padding: 0 14px; background: var(--bar); border-bottom: 2.5px solid var(--line); border-radius: 13px 13px 0 0; font-family: var(--pixel); font-size: 18px; color: var(--rose); }
+.win > .bar .btns { display: flex; gap: 6px; }
+.win > .bar .btns i { width: 18px; height: 18px; border: 2px solid var(--line); border-radius: 4px; background: var(--cream2); }
+.win > .body { padding: 24px 24px 22px; }
+.label { font-family: var(--pixel); font-size: 16px; color: var(--rose); letter-spacing: 1px; margin: 18px 0 8px; display: flex; align-items: center; gap: 6px; }
+.label::before { content: '✦'; font-size: 14px; }
+.warn { color: var(--rose); font-weight: 700; }
+
+/* ---------- 首页 ---------- */
+.home { max-width: 480px; margin: 0 auto; }
+.hero { position: relative; text-align: center; margin: -6px 0 4px; }
+.hero img.pc { width: 250px; max-width: 70%; filter: drop-shadow(0 6px 14px rgba(226, 0, 122, .15)); }
+.title { font-family: var(--smiley); font-size: 46px; line-height: 1.1; color: var(--rose); text-align: center; text-shadow: 3px 3px 0 var(--rose-soft); letter-spacing: 2px; }
+.sub { text-align: center; color: var(--soft); font-size: 16px; margin-top: 8px; }
+.how { color: var(--soft); font-size: 15px; line-height: 1.6; }
+.name { width: 100%; height: 48px; border-radius: 10px; border: 2px solid var(--line); background: var(--cream2); font-size: 18px; padding: 0 14px; color: var(--ink); font-family: var(--sans); }
+.name:focus { outline: 3px solid var(--rose-soft); }
+.picks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; text-align: center; margin-top: 10px; }
+.picks .pos { font-family: var(--pixel); font-size: 15px; color: var(--soft); margin-bottom: 5px; }
+.picks select { font-family: var(--smiley); font-size: 24px; width: 100%; min-width: 0; height: 50px; padding: 0 2px; border-radius: 10px; border: 2px solid var(--line); background: var(--cream2); color: var(--ink); text-align: center; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.picks select:focus { outline: 3px solid var(--rose-soft); }
+.picks select + select { margin-top: 8px; }
+.acts { display: flex; gap: 12px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.btn { font-family: var(--pixel); font-size: 19px; padding: 11px 28px; border-radius: 26px; border: 2.5px solid var(--rose); cursor: pointer; background: var(--rose); color: #fff; letter-spacing: 1px; text-decoration: none; box-shadow: 0 4px 0 #b30062; }
+.btn.big { width: 100%; font-size: 21px; padding: 13px 0; }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #b30062; }
+.btn.ghost { background: var(--cream2); color: var(--rose); box-shadow: 0 4px 0 var(--line); border-color: var(--line); }
+.err, .hint { text-align: center; font-size: 15px; min-height: 22px; margin-top: 10px; }
+.err { color: var(--rose); }
+.hint { color: var(--soft); }
+
+/* ---------- 结果页 ---------- */
+.result { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.stage { width: 100%; min-width: 0; overflow: hidden; padding: 6px 0 4px; }
+.scene { margin: 0 auto; position: relative; opacity: 0; transform: translateY(14px); transition: opacity .7s, transform .7s; }
+.scene.on { opacity: 1; transform: none; }
+.scene .card { position: absolute; top: 0; left: 0; }
+
+/* ---------- 卡（宽 720，至少高 1180，字多就自动变高；按栏宽缩放） ---------- */
+.card { width: 720px; min-height: 1180px; display: flex; flex-direction: column; padding: 100px 50px 36px; transform-origin: top left; background: var(--cream); border-radius: 30px; overflow: hidden; box-shadow: 0 18px 50px rgba(226, 0, 122, .16); }
+.card .frame { position: absolute; inset: 14px; border: 3px solid var(--line); border-radius: 20px; pointer-events: none; }
+.card .frame::after { content: ''; position: absolute; inset: 6px; border: 1.5px solid var(--line); border-radius: 14px; }
+.card .tb { position: absolute; top: 34px; left: 38px; right: 38px; height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: var(--bar); border: 2.5px solid var(--line); border-radius: 12px; font-family: var(--pixel); font-size: 21px; color: var(--rose); }
+.card .tb .btns { display: flex; gap: 7px; }
+.card .tb .btns i { width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 4px; background: var(--cream2); }
+.card .st1 { position: absolute; top: 92px; right: 40px; width: 56px; z-index: 2; }
+.card .st2 { position: absolute; top: 236px; left: 34px; width: 36px; z-index: 2; }
+.card .in { position: relative; flex: 1; display: flex; flex-direction: column; }
+
+.c-head { text-align: center; padding-top: 14px; }
+.c-name { font-family: var(--sans); font-weight: 700; font-size: 30px; color: var(--soft); letter-spacing: 1px; } /* 名字是学员自己填的，字不一定在裁过的字体里，用系统字 */
+.c-label { font-family: var(--smiley); font-size: 62px; line-height: 1.15; color: var(--rose); text-shadow: 3px 3px 0 var(--rose-soft); letter-spacing: 2px; margin-top: 4px; }
+.c-phrase { font-size: 26px; color: var(--ink); margin-top: 6px; }
+.c-phrase::before { content: '「'; color: var(--line); }
+.c-phrase::after { content: '」'; color: var(--line); }
+
+.blk { margin-top: 20px; padding-top: 16px; border-top: 2px dashed var(--pink); }
+.blk h4 { font-family: var(--pixel); font-size: 18px; color: var(--rose); font-weight: 400; margin-bottom: 10px; letter-spacing: 1px; }
+.blk h4::before { content: '✦ '; }
+
+.c-strength { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 18px; align-items: center; }
+.c-level { font-family: var(--smiley); font-size: 76px; line-height: 1; text-align: center; color: var(--ink); text-shadow: 3px 3px 0 var(--pink); }
+.c-level small { display: block; font-family: var(--pixel); font-size: 17px; color: var(--soft); text-shadow: none; margin-top: 8px; letter-spacing: 1px; }
+.meter { height: 30px; border: 2.5px solid var(--line); border-radius: 15px; background: var(--cream2); overflow: hidden; display: flex; }
+.meter i { display: block; height: 100%; background: var(--rose); border-radius: 12px 0 0 12px; }
+.meter-t { display: flex; justify-content: space-between; font-family: var(--pixel); font-size: 17px; color: var(--soft); margin-top: 6px; }
+.meter-t b { color: var(--rose); font-weight: 400; }
+.chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.chip { font-family: var(--pixel); font-size: 17px; padding: 4px 12px; border-radius: 14px; border: 2px solid var(--line); background: var(--cream2); color: var(--mute); }
+.chip.on { background: var(--rose); border-color: var(--rose); color: #fff; }
+
+.xj-row { display: flex; align-items: center; gap: 14px; }
+.xj-row + .xj-row { margin-top: 12px; }
+.xj-tag { flex: none; width: 46px; height: 46px; border-radius: 12px; color: #fff; font-family: var(--pixel); font-size: 24px; display: flex; align-items: center; justify-content: center; }
+.xj-tag.xi { background: var(--purple); }
+.xj-tag.ji { background: var(--mute); }
+.wx { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--smiley); font-size: 46px; color: #fff; box-shadow: 0 0 0 4px var(--cream2), 0 0 0 6px var(--line); }
+.wx.s { width: 58px; height: 58px; font-size: 32px; box-shadow: none; background: var(--cream2) !important; border: 3px solid; }
+.wx-arrow { color: var(--line); font-size: 26px; }
+.c-note { font-size: 19px; line-height: 1.5; color: var(--soft); margin-top: 12px; }
+.c-note b { color: var(--rose); }
+
+.c-two { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 18px; }
+.sw { display: flex; gap: 14px; }
+.sw div { text-align: center; width: 92px; }
+.sw i { display: block; width: 72px; height: 72px; margin: 0 auto 6px; border-radius: 50%; border: 3px solid rgba(33, 29, 54, .12); box-shadow: 0 0 0 4px var(--cream2); }
+.sw span { font-size: 18px; color: var(--ink); white-space: nowrap; }
+.nums { font-family: var(--smiley); font-size: 64px; color: var(--rose); letter-spacing: 6px; line-height: 1.1; text-shadow: 3px 3px 0 var(--rose-soft); }
+.taste { font-size: 19px; color: var(--soft); margin-top: 8px; line-height: 1.45; }
+
+.c-dir { font-family: var(--smiley); font-size: 30px; color: var(--ink); }
+.c-dir b { color: var(--rose); font-weight: 400; }
+.tags { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
+.tags span { font-size: 21px; padding: 5px 15px; border-radius: 18px; background: var(--cream2); border: 2px solid var(--line); }
+.tags span.abroad { background: var(--pink); border-color: var(--pink); }
+
+.c-foot { margin-top: auto; padding-top: 14px; border-top: 2px dashed var(--pink); display: flex; align-items: flex-end; justify-content: space-between; }
+.c-foot .l { font-size: 17px; color: var(--soft); line-height: 1.6; }
+.c-foot .l b { font-family: var(--pixel); font-weight: 400; color: var(--rose); font-size: 19px; letter-spacing: 1px; }
+.seal { flex: none; width: 104px; height: 104px; border: 3px solid var(--rose); border-radius: 50%; color: var(--rose); display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-12deg); background: rgba(255, 250, 242, .92); font-weight: 700; line-height: 1.15; position: relative; margin-bottom: -4px; }
+.seal::before { content: ''; position: absolute; inset: 5px; border: 1px solid var(--rose); border-radius: 50%; }
+.seal b { font-size: 21px; letter-spacing: 2px; }
+.seal i { font-style: normal; font-size: 13px; letter-spacing: 1px; margin-top: 3px; }
+
+/* ---------- 怎么算的 ---------- */
+.pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.pillars .col { border: 2px solid var(--line); border-radius: 12px; background: var(--cream2); padding: 6px 0 8px; }
+.pillars .col.day { background: var(--pink); }
+.pillars .pos { font-family: var(--pixel); font-size: 13px; color: var(--soft); }
+.pillars .gz { font-family: var(--smiley); font-size: 30px; line-height: 1.15; }
+table.sc { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+table.sc th { font-family: var(--pixel); font-weight: 400; color: var(--rose); font-size: 14px; text-align: left; padding: 4px 3px; border-bottom: 2px solid var(--line); }
+table.sc td { padding: 6px 3px; border-bottom: 1.5px dashed var(--pink); vertical-align: top; line-height: 1.45; }
+table.sc td.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.sc td.p { white-space: nowrap; color: var(--soft); }
+table.sc td.p b { font-family: var(--smiley); font-size: 20px; color: var(--ink); font-weight: 400; }
+table.sc .h { color: var(--purple); }
+table.sc tr.tot td { font-weight: 700; border-bottom: none; }
+.sum5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; text-align: center; margin-top: 10px; }
+.sum5 div { border: 2px solid var(--line); border-radius: 10px; background: var(--cream2); padding: 5px 0; font-size: 13px; color: var(--soft); }
+.sum5 div.h { background: #ece9ff; border-color: #b9b2f3; }
+.sum5 b { display: block; font-size: 17px; color: var(--ink); }
+.why { list-style: none; font-size: 15px; line-height: 1.6; }
+.why li { padding: 5px 0 5px 22px; position: relative; border-bottom: 1.5px dashed var(--pink); }
+.why li::before { content: '✦'; position: absolute; left: 2px; color: var(--rose); }
+.why li b { color: var(--rose); }
+.rule { font-size: 14.5px; color: var(--soft); line-height: 1.65; background: var(--cream2); border: 2px dashed var(--line); border-radius: 12px; padding: 10px 14px; }
+
+/* ---------- 任务栏 ---------- */
+.taskbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; height: 50px; padding-bottom: env(safe-area-inset-bottom); display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--cream); border-top: 2.5px solid var(--line); font-family: var(--pixel); font-size: 16px; }
+.taskbar .start { padding: 5px 14px; border: 2px solid var(--line); border-radius: 10px; background: var(--pink); color: var(--ink); white-space: nowrap; }
+.taskbar .tab { padding: 5px 12px; border: 2px solid var(--line); border-radius: 10px; background: var(--cream2); color: var(--rose); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.taskbar .clock { margin-left: auto; padding: 5px 12px; border: 2px solid var(--line); border-radius: 10px; background: var(--cream2); color: var(--ink); }
+
+.shot { position: fixed; inset: 0; background: rgba(33, 29, 54, .82); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; z-index: 9; }
+.shot img { max-width: 100%; max-height: 80vh; border-radius: 14px; }
+.shot p { color: #fff; font-size: 17px; }
+
+@media (max-width: 600px) {
+  body { padding: 16px 12px 76px; }
+  .win > .body { padding: 18px 14px 18px; }
+  .title { font-size: 42px; }
+  .taskbar { gap: 8px; padding: 0 10px; font-size: 15px; }
+  .taskbar .tab.extra { display: none; }
+}
+</style>
+</head>
+<body>
+
+<img class="deco" src="ui/star-y.png" alt="" style="left:2%;top:120px;width:46px">
+<img class="deco" src="ui/star-w.png" alt="" style="right:3%;top:60px;width:38px">
+<img class="deco" src="ui/star-w.png" alt="" style="right:6%;bottom:110px;width:30px">
+
+<!-- 首页：选八字 -->
+<section class="home hidden" id="home">
+  <div class="win">
+    <div class="bar"><span>五行喜忌卡.exe</span><span class="btns"><i></i><i></i><i></i></span></div>
+    <div class="body">
+      <div class="hero"><img class="pc" src="ui/computer.webp" alt=""></div>
+      <h1 class="title">五行喜忌卡</h1>
+      <p class="sub">传统五行的娱乐解读，<span class="warn">仅供参考</span></p>
+      <div class="label">你的名字</div>
+      <input class="name" id="nm" maxlength="8" placeholder="可以不填，填了会印在卡上">
+      <div class="label">你的八字</div>
+      <p class="how">照着你的八字排盘（用哪个排盘 App 都可以），一柱一柱选好天干、地支。不知道时辰的，时柱选「不知道」。</p>
+      <div class="picks" id="picks"></div>
+      <div class="acts"><button class="btn big" id="go">生成我的五行卡 ▶</button></div>
+      <p class="err" id="err"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 结果页 -->
+<div class="result hidden" id="result">
+  <div class="stage" id="stage">
+    <div class="scene" id="scene">
+      <div class="card" id="card">
+        <div class="frame"></div>
+        <div class="tb"><span>五行喜忌卡.exe</span><span class="btns"><i></i><i></i><i></i></span></div>
+        <img class="st1" src="ui/star-y.png" alt="">
+        <img class="st2" src="ui/star-w.png" alt="">
+        <div class="in">
+          <div class="c-head">
+            <div class="c-name" id="cName"></div>
+            <div class="c-label" id="cLabel"></div>
+            <div class="c-phrase" id="cPhrase"></div>
+          </div>
+          <div class="blk">
+            <h4>身强身弱</h4>
+            <div class="c-strength">
+              <div class="c-level" id="cLevel"></div>
+              <div>
+                <div class="meter"><i id="cMeter"></i></div>
+                <div class="meter-t"><span>帮身 <b id="cPct"></b></span><span>耗身 <span id="cPct2"></span></span></div>
+                <div class="chips" id="cChips"></div>
+              </div>
+            </div>
+          </div>
+          <div class="blk">
+            <h4>五行喜忌</h4>
+            <div class="xj-row"><span class="xj-tag xi">喜</span><div class="xj-row" id="cXi"></div></div>
+            <div class="xj-row"><span class="xj-tag ji">忌</span><div class="xj-row" id="cJi"></div></div>
+            <div class="c-note" id="cNote"></div>
+          </div>
+          <div class="blk c-two">
+            <div><h4>幸运色</h4><div class="sw" id="cColors"></div></div>
+            <div><h4>幸运数字</h4><div class="nums" id="cNums"></div><div class="taste" id="cTaste"></div></div>
+          </div>
+          <div class="blk">
+            <h4>天选城市</h4>
+            <div class="c-dir" id="cDir"></div>
+            <div class="tags" id="cCities"></div>
+          </div>
+          <div class="c-foot">
+            <div class="l"><span id="cBazi"></span><br><b>以上解读来自谷雨悟道</b></div>
+            <div class="seal"><b>仅供参考</b><i>未必准确</i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="acts" id="acts">
+      <button class="btn" id="save">保存五行卡</button>
+      <a class="btn ghost" href="index.html">再算一个</a>
+    </div>
+    <p class="hint" id="saveHint"></p>
+  </div>
+
+  <section class="win" id="how">
+    <div class="bar"><span>怎么算的.exe</span><span class="btns"><i></i><i></i><i></i></span></div>
+    <div class="body">
+      <div class="label">四柱</div>
+      <div class="pillars" id="pillars"></div>
+      <div class="label">打分表</div>
+      <table class="sc" id="score"></table>
+      <div class="sum5" id="sum5"></div>
+      <div class="label">为什么是这个结果</div>
+      <ul class="why" id="why"></ul>
+      <div class="label">怎么算</div>
+      <div class="rule">每个字先归成五类：生我、同我（帮身），克我、我生、我克（耗身）。位置分：月支 4、日支 2、月干和时干 1.5、年干、年支、时支各 1；地支按藏干拆开（一个字全给本气，两个字七三分，三个字六三一分）；相邻地支冲或合，各打七折。帮身占 60% 以上身强，50%～60% 偏强，40%～50% 偏弱，不到 40% 身弱。身弱补生我、同我；身强取克我、我生、我克。冬天生的火提前，夏天生的水提前。</div>
+    </div>
+  </section>
+</div>
+
+<div class="taskbar"><span class="start">✦ START</span><span class="tab" id="tab1">五行喜忌卡.exe</span><span class="clock" id="clock"></span></div>
+
+<script src="html2canvas.min.js"></script>
+<script src="wuxing.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const q = new URLSearchParams(location.search);
+const b = (q.get('b') || '').trim();
+const nameQ = (q.get('n') || '').trim().slice(0, 8);
+const WXC = w => 'var(--' + w + ')';
+const f2 = x => (Math.round(x * 100) / 100).toString();
+
+const tick = () => { const d = new Date(); $('clock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+tick(); setInterval(tick, 20000);
+
+if (!b) showHome(); else showResult();
+
+/* ---------- 首页 ---------- */
+function showHome() {
+  $('home').classList.remove('hidden');
+  const cols = ['年柱', '月柱', '日柱', '时柱'];
+  $('picks').innerHTML = cols.map((c, i) =>
+    '<div><div class="pos">' + c + '</div>' +
+    '<select id="g' + i + '"><option value="">天干</option>' + (i === 3 ? '<option value="?">不知道</option>' : '') + [...Wuxing.GAN].map(x => '<option>' + x + '</option>').join('') + '</select>' +
+    '<select id="z' + i + '"><option value="">地支</option>' + (i === 3 ? '<option value="?">不知道</option>' : '') + [...Wuxing.ZHI].map(x => '<option>' + x + '</option>').join('') + '</select></div>'
+  ).join('');
+  $('go').onclick = () => {
+    let s = '';
+    for (let i = 0; i < 4; i++) {
+      const g = $('g' + i).value, z = $('z' + i).value;
+      if (i === 3 && (g === '?' || z === '?')) break;
+      if (!g || !z) { $('err').textContent = '「' + cols[i] + '」还没选完'; return; }
+      s += g + z;
+    }
+    if (!Wuxing.parse(s)) { $('err').textContent = '有一柱的天干地支配不上（阳干配阳支、阴干配阴支），再对一下排盘'; return; }
+    const n = $('nm').value.trim();
+    location.search = '?b=' + encodeURIComponent(s) + (n ? '&n=' + encodeURIComponent(n) : '');
+  };
+}
+
+/* ---------- 结果页 ---------- */
+function wxBall(w, small) { return '<span class="wx' + (small ? ' s' : '') + '" style="' + (small ? 'color:' + WXC(w) + ';border-color:' + WXC(w) : 'background:' + WXC(w)) + '">' + w + '</span>'; }
+
+function showResult() {
+  const r = Wuxing.judge(b);
+  if (r.error) { showHome(); $('err').textContent = '链接里的八字看不懂，请在上面重新选一次'; return; }
+  $('result').classList.remove('hidden');
+  if (q.has('only')) { $('how').classList.add('hidden'); $('acts').classList.add('hidden'); document.querySelector('.taskbar').classList.add('hidden'); document.body.style.padding = '10px'; }
+  document.title = (nameQ ? nameQ + '的' : '') + '五行喜忌卡';
+
+  // 卡
+  $('cName').textContent = (nameQ || '我') + '的五行喜忌';
+  $('cLabel').textContent = r.label;
+  $('cPhrase').textContent = r.phrase;
+  $('cLevel').innerHTML = esc(r.level) + '<small>' + (r.deling ? '得令' : '失令') + ' · ' + r.ling + '当令</small>';
+  const p = Math.round(r.pct * 100);
+  $('cMeter').style.width = p + '%';
+  $('cPct').textContent = p + '%';
+  $('cPct2').textContent = (100 - p) + '%';
+  const solidRoot = r.roots.some(x => !x.broken);
+  $('cChips').innerHTML = [['得令', r.deling], ['得地', solidRoot], ['得生', r.sheng.length > 0], ['得助', r.zhu.length > 0 || r.roots.some(x => !x.broken && x.k === 0)]]
+    .map(([n, on]) => '<span class="chip' + (on ? ' on' : '') + '">' + n + (on ? ' ✓' : ' ✗') + '</span>').join('');
+  $('cXi').innerHTML = r.xiWx.map((w, i) => (i ? '<span class="wx-arrow">›</span>' : '') + wxBall(w)).join('');
+  $('cJi').innerHTML = r.jiWx.map(w => wxBall(w, true)).join('');
+  const notes = [];
+  if (r.cong) notes.push('<b>这个盘可能是' + r.cong + '格</b>，喜忌按' + r.cong + '取，和一般的盘相反；拿不准可以请懂行的老师再看看。');
+  else if (r.tiaohou) notes.push(r.tiaohou);
+  $('cNote').innerHTML = notes.join('<br>');
+  $('cColors').innerHTML = r.colors.map(([n, h]) => '<div><i style="background:' + h + '"></i><span>' + n + '</span></div>').join('');
+  $('cNums').textContent = r.nums.join(' ');
+  $('cTaste').textContent = '喜好口味：' + r.tastes.join('、') + (r.veg ? '；多吃蔬菜，少吃肉' : '');
+  $('cDir').innerHTML = '你的方向在<b>' + esc(r.dirText) + '</b>';
+  $('cCities').innerHTML = r.cities.map(c => '<span>' + esc(c) + '</span>').join('') + r.countries.map(c => '<span class="abroad">' + esc(c) + '</span>').join('');
+  $('cBazi').textContent = '八字  ' + r.pillars.join('  ') + (r.has4 ? '' : '（没有时柱）');
+
+  // 怎么算的
+  const pos = ['年', '月', '日', '时'];
+  $('pillars').innerHTML = r.pillars.map((x, i) => '<div class="col' + (i === 2 ? ' day' : '') + '"><div class="pos">' + pos[i] + '柱</div><div class="gz">' + x[0] + '<br>' + x[1] + '</div></div>').join('') +
+    (r.has4 ? '' : '<div class="col"><div class="pos">时柱</div><div class="gz">？<br>？</div></div>');
+  $('score').innerHTML = '<tr><th>位置</th><th>怎么算</th><th>帮身</th><th>耗身</th></tr>' +
+    r.rows.map(row => '<tr><td class="p">' + row.pos + ' <b>' + row.ch + '</b></td><td>' +
+      row.parts.map(x => '<span class="' + (x.cat === '生我' || x.cat === '同我' ? 'h' : '') + '">' + x.ch + ' ' + x.cat + ' ' + f2(x.v) + '</span>').join('、') +
+      (row.disc < 1 ? '（冲合打折）' : '') + '</td><td class="n">' + f2(row.help) + '</td><td class="n">' + f2(row.hurt) + '</td></tr>').join('') +
+    '<tr class="tot"><td colspan="2">合计</td><td class="n">' + f2(r.sum.生我 + r.sum.同我) + '</td><td class="n">' + f2(r.sum.克我 + r.sum.我生 + r.sum.我克) + '</td></tr>';
+  $('sum5').innerHTML = ['生我', '同我', '克我', '我生', '我克'].map(c => '<div class="' + (c === '生我' || c === '同我' ? 'h' : '') + '">' + c + '（' + Wuxing.catWx(r.me, c) + '）<b>' + f2(r.sum[c]) + '</b></div>').join('');
+  const rootTxt = r.roots.length ? r.roots.map(x => x.pos + x.zhi + '里的' + x.ch + (x.k === 0 ? '（本气）' : x.k === 1 ? '（中气）' : '（余气）') + (x.broken ? '，被冲' : '')).join('；') : '地支里没有和日主同五行的字';
+  const why = [
+    '<b>日主</b>：' + r.dm + r.me + '，生在' + r.pillars[1][1] + '月，' + r.ling + '当令，' + r.me + '在这个月是「' + r.state + '」，' + (r.deling ? '得令' : '失令') + '。',
+    '<b>得地</b>：' + rootTxt + '。',
+    '<b>得生、得助</b>：生我的字 ' + (r.sheng.join('、') || '没有') + '；天干上同我的字 ' + (r.zhu.join('、') || '没有') + '。',
+    (r.clash.length ? '<b>冲合</b>：' + r.clash.join('，') + '，这两支的分数打七折。' : '<b>冲合</b>：相邻地支没有六冲、六合。'),
+    '<b>结论</b>：帮身占 ' + Math.round(r.pct * 1000) / 10 + '%，' + r.level + '。' + (r.strong ? '帮身的力量够了，喜克我、我生、我克来平衡。' : '帮身的力量不够，喜生我、同我来补。'),
+  ];
+  if (r.tiaohou) why.push('<b>寒暖</b>：' + r.tiaohou);
+  if (r.cong) why.push('<b>从格</b>：' + (r.cong === '从弱' ? '帮身不到 25%，日主没有站得住的根，天干也没有帮手' : '帮身 85% 以上') + '，可能是' + r.cong + '格。按一般的盘看，喜 ' + r.fuyi.xiWx.join('、') + '，忌 ' + r.fuyi.jiWx.join('、') + '；卡上写的是' + r.cong + '格的喜忌。');
+  $('why').innerHTML = why.map(x => '<li>' + x + '</li>').join('');
+
+  fit();
+  window.addEventListener('resize', fit);
+  requestAnimationFrame(() => setTimeout(() => $('scene').classList.add('on'), 60));
+
+  $('save').onclick = async () => {
+    $('saveHint').textContent = '正在生成图片……';
+    try {
+      await document.fonts.ready;
+      const cv = await html2canvas($('card'), { scale: 2, backgroundColor: null, useCORS: true, onclone: d => { d.getElementById('card').style.transform = 'none'; } });
+      const url = cv.toDataURL('image/png');
+      if (matchMedia('(pointer: coarse)').matches) {
+        const box = document.createElement('div');
+        box.className = 'shot';
+        box.innerHTML = '<img alt="五行喜忌卡"><p>长按图片保存，点空白处关闭</p>';
+        box.querySelector('img').src = url;
+        box.onclick = e => { if (e.target === box) box.remove(); };
+        document.body.appendChild(box);
+        $('saveHint').textContent = '';
+      } else {
+        const a = document.createElement('a');
+        a.download = '五行喜忌卡' + (nameQ ? '-' + nameQ : '') + '.png';
+        a.href = url;
+        a.click();
+        $('saveHint').textContent = '已保存，发到群里看看大家都喜什么';
+      }
+    } catch (e) {
+      $('saveHint').textContent = '保存没成功，直接截图也行';
+    }
+  };
+}
+
+// 卡按 720×1180 设计：按栏宽缩放
+function fit() {
+  const w = Math.min(720, $('stage').clientWidth || 720);
+  const k = w / 720;
+  $('card').style.transform = 'scale(' + k + ')';
+  $('scene').style.width = 720 * k + 'px';
+  $('scene').style.height = $('card').offsetHeight * k + 'px';
+}
+</script>
+</body>
+</html>
