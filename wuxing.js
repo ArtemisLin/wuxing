@@ -223,6 +223,47 @@
     我克: '适合直接对结果负责：销售、经营、项目、管钱，拿到手的回报才算数。',
     克我: '适合有目标、有考核的环境：大公司、体制内、比赛，给自己定截止日。',
   };
+
+  /* ---------- 10-22 八字 MBTI ---------- */
+  // 十二长生：阳干顺行、阴干逆行，火土同宫
+  const STAGES = ['长生', '沐浴', '冠带', '临官', '帝旺', '衰', '病', '死', '墓', '绝', '胎', '养'];
+  const CS_START = { 甲: '亥', 乙: '午', 丙: '寅', 丁: '酉', 戊: '寅', 己: '酉', 庚: '巳', 辛: '子', 壬: '申', 癸: '卯' };
+  function stageOf(g, z) {
+    const yang = GAN.indexOf(g) % 2 === 0, k = ZHI.indexOf(z) - ZHI.indexOf(CS_START[g]);
+    return STAGES[((yang ? k : -k) % 12 + 12) % 12];
+  }
+  // 十神：五类再按阴阳分偏正
+  function shishen(dm, c) {
+    const r = rel(GAN_WX[dm], GAN_WX[c]), same = GAN.indexOf(dm) % 2 === GAN.indexOf(c) % 2;
+    return { 生我: same ? '偏印' : '正印', 同我: same ? '比肩' : '劫财', 克我: same ? '七杀' : '正官', 我生: same ? '食神' : '伤官', 我克: same ? '偏财' : '正财' }[r];
+  }
+  // E/I：日干坐下的状态、坐下的十神
+  const STAGE_EI = { 长生: 1, 沐浴: 1, 冠带: 0.8, 临官: 1, 帝旺: 1.2, 衰: 0, 病: -0.5, 死: -1.5, 墓: -1.5, 绝: -1.5, 胎: -0.5, 养: -0.3 };
+  const ZUO_EI = { 食神: 0.8, 伤官: 1, 偏财: 0.5, 正财: 0.5, 比肩: 0, 劫财: 0.3, 正官: -0.3, 七杀: 0, 正印: -0.8, 偏印: -1.5 };
+  // 每个字的分量：月令里的旺相休囚死（rel(当令, 它)），天干没根再打折
+  const SEASON_W = { 同我: 1.2, 我生: 1.0, 生我: 0.8, 克我: 0.6, 我克: 0.5 };
+  const MBTI_NAME = { INTJ: '建筑师', INTP: '逻辑学家', ENTJ: '指挥官', ENTP: '辩论家', INFJ: '提倡者', INFP: '调停者', ENFJ: '主人公', ENFP: '竞选者', ISTJ: '物流师', ISFJ: '守卫者', ESTJ: '总经理', ESFJ: '执政官', ISTP: '鉴赏家', ISFP: '探险家', ESTP: '企业家', ESFP: '表演者' };
+  const MBTI_DIFF = {
+    EI: '命里外放，平时收着', IE: '看着热闹，心里要独处',
+    SN: '命里脚踏实地，偏爱天马行空', NS: '脑子天马行空，做事很实在',
+    TF: '命里讲道理，心里很柔软', FT: '命里重感情，嘴上讲逻辑',
+    JP: '命里要规矩，活得很随性', PJ: '命里爱自由，硬是把自己管得很好',
+  };
+  function mbtiOf(P, dm, index) {
+    const g = P.map(p => p[0]), z = P.map(p => p[1]), ling = LING[z[1]];
+    const w = { 正印: 0, 偏印: 0, 比肩: 0, 劫财: 0, 正官: 0, 七杀: 0, 食神: 0, 伤官: 0, 正财: 0, 偏财: 0 };
+    const rooted = c => z.some(b => [...CG[b]].some(x => GAN_WX[x] === GAN_WX[c]));
+    g.forEach((c, i) => { if (i === 2) return; w[shishen(dm, c)] += W_GAN[i] * SEASON_W[rel(ling, GAN_WX[c])] * (rooted(c) ? 1 : 0.6); });
+    z.forEach((b, i) => { const c = CG[b][0]; w[shishen(dm, c)] += W_ZHI[i] * SEASON_W[rel(ling, GAN_WX[c])]; });
+    const tot = Object.values(w).reduce((a, b) => a + b, 0) || 1;
+    const yin = w.正印 + w.偏印, bi = w.比肩 + w.劫财, guan = w.正官 + w.七杀, shi = w.食神 + w.伤官, cai = w.正财 + w.偏财;
+    const stage = stageOf(dm, z[2]), zuo = shishen(dm, CG[z[2]][0]);
+    const ei = (GAN.indexOf(dm) % 2 === 0 ? 0.8 : -0.8) + STAGE_EI[stage] + ZUO_EI[zuo] + 2 * (shi + cai - yin) / tot + 0.02 * (index - 50);
+    const me = GAN_WX[dm];
+    const tf = me === '金' || me === '水' ? 'T' : me === '木' || me === '火' ? 'F' : (guan + bi >= yin + shi ? 'T' : 'F');
+    const type = (ei > 0 ? 'E' : 'I') + (cai + guan > yin + shi ? 'S' : 'N') + tf + (guan + w.正印 > shi + bi + w.偏印 ? 'J' : 'P');
+    return { type, name: MBTI_NAME[type], stage, zuo, ei: Math.round(ei * 100) / 100 };
+  }
   const CENTER = [32.5, 113.5];   // 全国中部（郑州、武汉之间）
   const DIR_DEG = { 北: 0, 东北: 45, 东: 90, 东南: 135, 南: 180, 西南: 225, 西: 270, 西北: 315 };
   // 方位里的五行：四隅的两个地支，一个土、一个本方
@@ -412,7 +453,7 @@
     const yangWhy = dm + '长生在' + CHANGSHENG[dm] + '（' + ZHI_DIR[CHANGSHENG[dm]] + '），禄在' + LU[dm] + '（' + ZHI_DIR[LU[dm]] + '）';
 
     return {
-      social: SOCIAL[rel(me, x0)], work: WORK[rel(me, x0)],
+      social: SOCIAL[rel(me, x0)], work: WORK[rel(me, x0)], mbti: mbtiOf(P, dm, index),
       nick: nick[0], nickLine: nick[1], lip, hair, avatar, feelNote, tiaoStems: tStems, home, homeLine, cityNotes,
       yangDir: yangDirs.map(d => DIR_NAME[d]).join('和'), yangCities, yangWhy,
       pillars: P, has4, dm, me, rows, sum, total, pct, raw, index, level, strong, deling, ling: LING[z[1]], state: STATE[lingCat],
@@ -421,5 +462,5 @@
     };
   }
 
-  global.Wuxing = { judge, parse, GAN, ZHI, GAN_WX, CG, rel, catWx, PROV_LIST, HOME_CITY };
+  global.Wuxing = { judge, parse, GAN, ZHI, GAN_WX, CG, rel, catWx, PROV_LIST, HOME_CITY, MBTI_NAME, MBTI_DIFF };
 })(typeof window !== 'undefined' ? window : globalThis);

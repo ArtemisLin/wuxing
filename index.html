@@ -62,6 +62,10 @@ select.name { appearance: none; -webkit-appearance: none; background-image: line
 .adv { display: grid; gap: 10px; }
 .adv div { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 21px; line-height: 1.5; color: var(--ink); }
 .adv b { font-family: var(--pixel); font-weight: 400; font-size: 18px; color: #fff; background: var(--purple); border-radius: 10px; text-align: center; padding: 3px 0; margin-top: 2px; }
+.c-mbti { margin: 12px auto 0; display: inline-flex; align-items: center; gap: 10px; padding: 6px 16px; border-radius: 22px; background: var(--purple); color: #fff; font-size: 20px; }
+.c-mbti b { font-family: var(--smiley); font-weight: 400; font-size: 30px; letter-spacing: 2px; }
+.c-mbti small { font-family: var(--pixel); font-size: 16px; opacity: .85; }
+.c-mbti2 { font-size: 19px; color: var(--purple); margin-top: 8px; }
 .c-home { margin-top: 14px; padding: 10px 14px; border-radius: 12px; background: var(--pink); font-size: 19px; line-height: 1.5; color: var(--ink); }
 .c-cnote { margin-top: 10px; font-size: 16px; line-height: 1.5; color: var(--soft); }
 .picks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; text-align: center; margin-top: 10px; }
@@ -264,6 +268,8 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
       <p class="how">照着你的八字排盘（用哪个排盘 App 都可以），从年柱天干开始点字，选完会自动跳到下一格。点格子可以改。不知道时辰的，时柱点「不知道时辰」。</p>
       <div class="picks" id="picks"></div>
       <div class="kb hidden" id="kb"><div class="t" id="kbT"></div><div class="keys" id="keys"></div><div class="kb-foot" id="kbFoot"></div></div>
+      <div class="label">你测过的 MBTI</div>
+      <select class="name" id="mbti"><option value="">没测过 / 不记得</option></select>
       <div class="label">你怕冷还是怕热</div>
       <div class="feel" id="feel"><button type="button" data-f="cold">怕冷</button><button type="button" data-f="hot">怕热</button><button type="button" data-f="" class="on">都还好</button></div>
       <div class="acts"><button class="btn big" id="go">生成我的五行卡 ▶</button></div>
@@ -287,6 +293,8 @@ table.sc tr.tot td { font-weight: 700; border-bottom: none; }
             <div class="c-label" id="cLabel"></div>
             <div class="c-sub" id="cSub"></div>
             <div class="c-phrase" id="cPhrase"></div>
+            <div class="c-mbti" id="cMbti"></div>
+            <div class="c-mbti2" id="cMbti2"></div>
           </div>
           <div class="blk">
             <h4>身强身弱</h4>
@@ -499,6 +507,7 @@ function showHome() {
   }
   render();
   $('homeProv').innerHTML += Wuxing.PROV_LIST.map(p => '<option>' + p + '</option>').join('');
+  $('mbti').innerHTML += Object.keys(Wuxing.MBTI_NAME).sort().map(t => '<option value="' + t + '">' + t + ' ' + Wuxing.MBTI_NAME[t] + '</option>').join('');
   $('homeProv').onchange = () => {
     const list = Wuxing.HOME_CITY[$('homeProv').value] || [];
     $('homeCity').classList.toggle('hidden', list.length < 2);
@@ -520,7 +529,8 @@ function showHome() {
     const h = $('homeProv').value, needCity = (Wuxing.HOME_CITY[h] || []).length > 1, c = needCity ? $('homeCity').value : '';
     if (!h) { $('err').textContent = '请选老家的省份'; $('homeProv').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('homeProv').focus(); return; }
     if (needCity && !c) { $('err').textContent = '请选老家的城市'; $('homeCity').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('homeCity').focus(); return; }
-    location.search = '?b=' + encodeURIComponent(s) + (n ? '&n=' + encodeURIComponent(n) : '') + (feel ? '&t=' + feel : '') + (h ? '&h=' + encodeURIComponent(h) : '') + (c ? '&c=' + encodeURIComponent(c) : '');
+    const m = $('mbti').value;
+    location.search = '?b=' + encodeURIComponent(s) + (n ? '&n=' + encodeURIComponent(n) : '') + (feel ? '&t=' + feel : '') + (h ? '&h=' + encodeURIComponent(h) : '') + (c ? '&c=' + encodeURIComponent(c) : '') + (m ? '&m=' + m : '');
   };
 }
 
@@ -539,6 +549,12 @@ function showResult() {
   $('cLabel').textContent = r.nick;
   $('cSub').textContent = r.label + ' · ' + r.level;
   $('cPhrase').textContent = r.nickLine;
+  $('cMbti').innerHTML = '<small>八字 MBTI</small><b>' + r.mbti.type + '</b>' + esc(r.mbti.name);
+  const realM = (q.get('m') || '').toUpperCase();
+  if (Wuxing.MBTI_NAME[realM]) {
+    const diff = [0, 1, 2, 3].filter(i => realM[i] !== r.mbti.type[i]).map(i => Wuxing.MBTI_DIFF[r.mbti.type[i] + realM[i]]);
+    $('cMbti2').textContent = diff.length ? '你测出来是 ' + realM + '：' + diff.join('；') + '。' : '你测出来也是 ' + realM + '，八字和 MBTI 对上了，实锤。';
+  } else $('cMbti2').classList.add('hidden');
   $('cLevel').innerHTML = esc(r.level) + '<small>' + (r.deling ? '得令' : '失令') + ' · ' + r.ling + '当令</small>';
   $('cLevel').style.fontSize = r.level.length > 2 ? '56px' : '';
   const ix = Math.round(r.index);
